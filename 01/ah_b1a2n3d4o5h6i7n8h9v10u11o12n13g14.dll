@@ -1,0 +1,183 @@
+/*
+
+================================================================================
+TÓM TẮT ĐỀ BÀI:
+- Lưới N x N, di chuyển từ (1, 1) lần lượt qua các quốc gia 1 -> 2 -> ... -> M.
+- Chi phí di chuyển giữa 2 ô là khoảng cách Manhattan: |x1 - x2| + |y1 - y2|.
+- Tìm tổng số ô ít nhất (khoảng cách + 1).
+
+GIẢI THUẬT THEO CODE:
+1. Sử dụng DP: cur[x][y] là khoảng cách ngắn nhất để đạt tới ô (x, y) của quốc gia hiện tại.
+2. Với mỗi quốc gia 'c' từ 1 đến M, ta cập nhật cur[x][y] từ các ô đã tính ở quốc gia 'c-1'
+   (được lưu trong mảng vector query[r]).
+3. Phá dấu giá trị tuyệt đối của khoảng cách Manhattan thành 4 trường hợp (4 hướng):
+   - Hướng 1 (x' <= x, y' <= y): (x - x') + (y - y') = (x + y) + (dp' - x' - y'). Dùng ST A.
+   - Hướng 2 (x' <= x, y' >= y): (x - x') + (y' - y) = (x - y) + (dp' - x' + y'). Dùng ST B.
+   - Hướng 3 (x' >= x, y' <= y): (x' - x) + (y - y') = (y - x) + (dp' + x' - y'). Dùng ST C.
+   - Hướng 4 (x' >= x, y' >= y): (x' - x) + (y' - y) = (-x - y) + (dp' + x' + y'). Dùng ST D.
+4. Triển khai:
+   - Pass 1: Sắp xếp các ô quốc gia 'c' theo dòng tăng dần. Duyệt qua tới đâu, đẩy các ô
+     của quốc gia 'c-1' có dòng tương ứng vào ST A và B. Query tìm min trong vùng cột [1, y] và [y, n].
+   - Pass 2: Sắp xếp theo dòng giảm dần. Đẩy các ô quốc gia 'c-1' vào ST C và D.
+     Query tìm min tương tự để xử lý các ô nằm ở dòng phía dưới.
+5. Độ phức tạp: O(M * (N log N + K log N)) với K là số ô của mỗi quốc gia.
+================================================================================
+*/
+
+#include<bits/stdc++.h>
+#define task "main"
+#define endl '\n'
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 2000000000
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+using namespace std;
+
+const int maxn = 1005;
+
+int n, dist[1005][1005], best[maxn], m, cur[maxn][maxn];
+vector <ii> pos[maxn], query[maxn];
+
+
+int dx[4] = {1, -1, 0, 0};
+int dy[4] = {0, 0, 1, -1};
+
+struct Seg {
+    int n;
+    vector<int> st;
+    Seg(int _n=0) { init(_n); }
+    void init(int _n) {
+        n = _n;
+        if (n <= 0) { st.clear(); return; }
+        st.assign(4*n+5, oo);
+    }
+    void upd(int id, int l, int r, int idx, int val) {
+        if (l == r) {
+            st[id] = min(st[id], val);
+            return;
+        }
+        int mid = (l + r) >> 1;
+        if (idx <= mid) upd(id<<1, l, mid, idx, val);
+        else upd(id<<1|1, mid+1, r, idx, val);
+        st[id] = min(st[id<<1], st[id<<1|1]);
+    }
+    void update(int idx, int val) {
+        if (n <= 0) return;
+        if (idx < 1) idx = 1;
+        if (idx > n) idx = n;
+        upd(1, 1, n, idx, val);
+    }
+    int qry(int id, int l, int r, int L, int R) {
+        if (R < l || r < L) return oo;
+        if (L <= l && r <= R) return st[id];
+        int mid = (l + r) >> 1;
+        return min(qry(id<<1, l, mid, L, R), qry(id<<1|1, mid+1, r, L, R));
+    }
+    int query(int L, int R) {
+        if (n <= 0) return oo;
+        if (L > R) return oo;
+        if (L < 1) L = 1;
+        if (R > n) R = n;
+        return qry(1, 1, n, L, R);
+    }
+} A, B, C, D;
+
+
+int main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+
+    if (fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+
+    cin >> n >> m;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            int x; cin >> x;
+            pos[x].pb({i, j});
+            cur[i][j] = oo;
+        }
+    }
+
+    A.init(n+5);
+    B.init(n+5);
+    C.init(n+5);
+    D.init(n+5);
+
+    cur[1][1] = 0;
+    query[1].pb({1, cur[1][1]});
+
+    int res = oo;
+
+    for (int c = 1; c <= m; c++) {
+        // Pass 1: Xử lý các ô (x', y') nằm ở dòng r <= x
+        sort(pos[c].begin(), pos[c].end());
+        int r = 1;
+
+        for (auto e : pos[c]) {
+            int x = e.fi, y = e.se;
+            while(r <= x) {
+                for (auto tmp : query[r]) {
+                    int col = tmp.fi, val = tmp.se;
+                    A.update(col, val - (col + r)); // Hướng trên-trái
+                    B.update(col, val + (col - r)); // Hướng trên-phải
+                }
+                r++;
+            }
+
+            int mini = oo;
+            mini = min(mini, A.query(1, y) + x + y);
+            mini = min(mini, B.query(y, n) + x - y);
+            cur[x][y] = min(cur[x][y], mini);
+            if (c == m) res = min(res, cur[x][y]);
+        }
+
+
+        A.init(n+5);
+        B.init(n+5);
+
+        // Pass 2: Xử lý các ô (x', y') nằm ở dòng r >= x
+        sort(pos[c].begin(), pos[c].end(), greater<ii>());
+        r = n;
+
+        for (auto e : pos[c]) {
+            int x = e.fi, y = e.se;
+            while(r >= x) {
+                for (auto tmp : query[r]) {
+                    int col = tmp.fi, val = tmp.se;
+                    C.update(col, val + (r - col)); // Hướng dưới-trái
+                    D.update(col, val + (r + col)); // Hướng dưới-phải
+                }
+                r--;
+            }
+
+            int mini = oo;
+            mini = min(mini, C.query(1, y) - x + y);
+            mini = min(mini, D.query(y, n) - x - y);
+            cur[x][y] = min(cur[x][y], mini);
+            if (c == m) res = min(res, cur[x][y]);
+        }
+
+
+        for (int i = 1; i <= n; i++) query[i].clear();
+        for (auto e : pos[c]) {
+            int x = e.fi, y = e.se;
+            if (cur[x][y] != oo) query[x].pb({y, cur[x][y]});
+        }
+        C.init(n + 2);
+        D.init(n + 2);
+    }
+
+    cout << res + 1; // Cộng 1 ô xuất phát theo yêu cầu đề bài
+}

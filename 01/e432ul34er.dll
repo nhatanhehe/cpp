@@ -1,0 +1,81 @@
+#include <bits/stdc++.h>
+#define task "EULER"
+#define ll long long
+#define ld long double
+#define ii pair<int, int>
+#define fi first
+#define se second
+#define mems(x, y) memset(x, y, sizeof(x));
+using namespace std;
+const int mod = 1e9 + 7, moi = 4e5 + 9;
+const ll INF = 1e18;
+const ld EFS = 1e-12;
+const int dx[] = { 1, -1, 0, 0};
+const int dy[] = { 0, 0, 1, -1};
+
+int n, m;
+bool used[moi];
+vector<int> euler;
+vector<ii> adj[moi];
+
+void EULER(int sta) {
+    stack<int> st;
+    st.push(sta);
+
+    while(!st.empty()) {
+        int u = st.top();
+        while(!adj[u].empty() && used[adj[u].back().se]) {
+            adj[u].pop_back();
+        }
+
+        if(adj[u].empty()) {
+            euler.push_back(u);
+            st.pop();
+        }
+
+        else {
+            auto e = adj[u].back();
+            adj[u].pop_back();
+            used[e.se] = true;
+            st.push(e.fi);
+        }
+
+    }
+}
+
+void Input() {
+    cin >> n >> m;
+    mems(used, false);
+
+    for(int i = 1; i <= m; i++) {
+        int u, v;
+        cin >> u >> v;
+
+        adj[u].push_back({v, i});
+        adj[v].push_back({u, i});
+    }
+
+    EULER(1);
+
+    for(int x : euler) cout << x << " ";
+}
+
+int main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    if(fopen(task".inp","r")){
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1;
+    //cin >> t;
+    while (t --) {
+        Input();
+    }
+
+    cerr << "Time: " << (1.0 * clock() / CLOCKS_PER_SEC) << " s.\n";
+}
+
+

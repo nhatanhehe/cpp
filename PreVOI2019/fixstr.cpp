@@ -1,0 +1,95 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define ll long long
+typedef long double ld;
+#define pb push_back
+#define pf push_front
+#define debug(x) cout<< #x << " = "<< x <<'\n'
+#define Task "a"
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define all(x) x.begin(),x.end()
+#define fi first
+#define se second
+const ll inf=1e18;
+const ll N=2e5+5;
+const ll mod=1e9+7;
+const ll base=311;
+const ll phainon=33550336;
+#define On(mask,i) (mask|(1LL<<i))
+#define Off(mask,i) (mask&~(1LL<<i))
+inline ll add(ll a,ll b){
+    ll res=a+b;
+    if(res>=mod) res-=mod;
+    return res;
+}
+ll sub(ll a,ll b){
+    return ((a-b)%mod+mod)%mod;
+}
+inline ll mul(ll a,ll b){
+    ll res=a*b;
+    if(res>=mod) res%=mod;
+    return res;
+}
+int n,q,l,r,pre[N],tree[N<<2],lz[N<<2];
+string s;
+void fix(int id,int k){
+    tree[id]+=k;
+    lz[id]+=k;
+}
+void push(int id){
+    if(lz[id]){
+       fix(id*2,lz[id]);
+       fix(id*2+1,lz[id]);
+       lz[id]=0;
+    }
+}
+void up(int u,int v,int k,int id=1,int l=1,int r=n){
+    if(l>v||r<u) return;
+    if(u<=l&&r<=v){
+        fix(id,k);
+        return;
+    }
+    push(id);
+    int mid=(l+r)>>1;
+    up(u,v,k,id*2,l,mid);
+    up(u,v,k,id*2+1,mid+1,r);
+    tree[id]=min(tree[id*2],tree[id*2+1]);
+}
+int get(int u,int v,int id=1,int l=1,int r=n){
+    if(l>v||r<u) return 1e9;
+    if(u<=l&&r<=v) return tree[id];
+    push(id);
+    int mid=(l+r)>>1;
+    return min(get(u,v,id*2,l,mid),get(u,v,id*2+1,mid+1,r));
+}
+main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);cout.tie(NULL);
+    if (fopen(Task ".inp","r")) {
+        freopen(Task ".inp","r", stdin);
+        freopen(Task ".out","w", stdout);
+    }
+    cin>>n>>q>>s;
+    s=" "+s;
+    for(int i=1;i<=n;i++){
+        pre[i]=pre[i-1]+(s[i]=='(')-(s[i]==')');
+        up(i,i,pre[i]);
+    }
+    while(q--){
+        cin>>l>>r;
+        /// dat (((((((
+        up(l,n,-pre[l-1]);
+        bool check1=0,check2=0;
+        int x=get(r,r),y=get(l,r);
+        if(x==y&&x<0){
+            check1=1;
+        }
+        /// dat )))))))
+        if(y>=0){
+            check2=1;
+        }
+        cout<<(check1||check2? "YES\n":"NO\n");
+        up(l,n,pre[l-1]);
+    }
+}

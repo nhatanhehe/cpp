@@ -1,0 +1,119 @@
+/**
+ * TÓM TẮT ĐỀ:
+ * - N khoang (vòng tròn), M vật tư, K robot (ở khoang trống).
+ * - Robot chọn hướng (Trái/Phải), di chuyển liên tục trong thời gian T.
+ * - Va chạm: 2 robot đối đầu gặp nhau tại cùng thời điểm -> biến mất.
+ * - Thu thập: Lấy vật tư nếu đi ngang qua. Mỗi vật tư lấy 1 lần.
+ * - Mục tiêu: Chọn hướng cho mỗi robot để thu được nhiều vật tư nhất.
+ * * GIẢI PHÁP:
+ * - Chia M vật tư vào K khoảng giữa các robot liên tiếp.
+ * - Một vật tư trong khoảng (robot_i, robot_{i+1}) chỉ có thể được lấy bởi:
+ * + Robot i nếu đi sang PHẢI.
+ * + Robot i+1 nếu đi sang TRÁI.
+ * - Quy tắc va chạm: Nếu i đi Phải và i+1 đi Trái, chúng gặp nhau tại t = dist/2.
+ * + Nếu t <= T: Hai robot quét sạch toàn bộ vật tư trong khoảng đó rồi biến mất.
+ * + Nếu t > T: Robot i đi được T bước sang phải, i+1 đi được T bước sang trái.
+ * - DP: dp[i][hướng] là số vật tư tối đa thu được từ robot 0 đến i.
+ * - Xử lý vòng tròn: Chạy DP 2 lần (cố định hướng robot đầu tiên là Trái hoặc Phải).
+ * - Dùng mảng cộng dồn/tìm kiếm nhị phân để đếm vật tư trong khoảng [L, R] nhanh chóng.
+ **/
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+typedef long long ll;
+
+ll N, M, K, T;
+vector<ll> items;
+vector<ll> robots;
+ll dp[20005][2];
+
+// Hàm đếm số vật tư trong đoạn [L, R] sử dụng tìm kiếm nhị phân
+ll countInRange(ll L, ll R) {
+    if (L > R) return 0;
+    auto it1 = lower_bound(items.begin(), items.end(), L);
+    auto it2 = upper_bound(items.begin(), items.end(), R);
+    return distance(it1, it2);
+}
+
+// Tính số vật tư thu được TRONG KHOẢNG giữa robot i và i+1
+ll f(int i, int d1, int d2) {
+    ll p1 = robots[i];
+    ll p2 = (i + 1 < K) ? robots[i+1] : robots[0] + N; // Xử lý điểm nối vòng
+    ll dist = p2 - p1;
+
+    // d=1 là Phải, d=0 là Trái
+    if (d1 == 1 && d2 == 0) {
+        // Hai robot đối đầu
+        if (dist <= 2 * T) {
+            // Va chạm trong tầm T: quét sạch vật tư ở giữa
+            return countInRange(p1 + 1, p2 - 1);
+        } else {
+            // Không kịp gặp nhau: mỗi con đi T bước
+            return countInRange(p1 + 1, p1 + T) + countInRange(p2 - T, p2 - 1);
+        }
+    } else if (d1 == 1 && d2 == 1) {
+        // Cả 2 cùng đi Phải: chỉ robot i lấy được vật tư trong khoảng này
+        return countInRange(p1 + 1, p1 + min(T, dist - 1));
+    } else if (d1 == 0 && d2 == 0) {
+        // Cả 2 cùng đi Trái: chỉ robot i+1 lấy được vật tư trong khoảng này
+        return countInRange(p2 - min(T, dist - 1), p2 - 1);
+    }
+    // d1=Trái, d2=Phải: cả 2 đều đi ra xa khoảng này -> 0 vật tư
+    return 0;
+}
+
+ll solve_dp(int start_dir) {
+    for (int i = 0; i < K; ++i) dp[i][0] = dp[i][1] = -1e15;
+    
+    dp[0][start_dir] = 0;
+    for (int i = 0; i < K - 1; ++i) {
+        for (int d_cur = 0; d_cur < 2; ++d_cur) {
+            if (dp[i][d_cur] < 0) continue;
+            for (int d_next = 0; d_next < 2; ++d_next) {
+                dp[i + 1][d_next] = max(dp[i + 1][d_next], dp[i][d_cur] + f(i, d_cur, d_next));
+            }
+        }
+    }
+    
+    ll res = -1e15;
+    for (int last_dir = 0; last_dir < 2; ++last_dir) {
+        if (dp[K - 1][last_dir] >= 0) {
+            res = max(res, dp[K - 1][last_dir] + f(K - 1, last_dir, start_dir));
+        }
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    if (!(cin >> N >> M >> K >> T)) return 0;
+    
+    items.resize(M);
+    for (int i = 0; i < M; ++i) cin >> items[i];
+    sort(items.begin(), items.end());
+    
+    // Mở rộng mảng vật tư để xử lý vòng tròn bằng tìm kiếm nhị phân dễ dàng hơn
+    for (int i = 0; i < M; ++i) items.push_back(items[i] + N);
+    
+    robots.resize(K);
+    for (int i = 0; i < K; ++i) cin >> robots[i];
+    sort(robots.begin(), robots.end());
+
+    if (K == 0) {
+        cout << 0 << endl;
+        return 0;
+    }
+
+    // Chạy DP 2 lần tương ứng robot 0 đi Trái (0) hoặc Phải (1)
+    ll result = max(solve_dp(0), solve_dp(1));
+    
+    cout << result << endl;
+
+    return 0;
+}

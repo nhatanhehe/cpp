@@ -1,0 +1,1 @@
+{"name":"Local: jewery","url":"e:\\cpp\\jewery.cpp","tests":[{"id":1786116361793,"input":"6 4\n4 4 3 1\n1 2 5 1\n5 6 1 1\n6 6 1 1\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\jewery.cpp","group":"local","local":true}

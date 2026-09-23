@@ -1,0 +1,162 @@
+/* 
+  LIFTWALK - Thang máy và thang bộ (Sửa lỗi)
+  ------------------------------------------
+  Tóm tắt đề:
+  - Có N thang máy ở các tầng X[i] (tăng dần), thang máy i có công suất ban đầu P[i].
+  - Nếu đứng ở tầng không có thang -> trong 1 giây đi xuống 1 tầng.
+  - Nếu đứng ở tầng có thang -> trong 1 giây thang đưa lên X[i] + curP, rồi curP *= 2.
+  - Với truy vấn (S, T): bắt đầu ở tầng S, sau đúng T giây sẽ đứng ở tầng nào?
+  - Yêu cầu xử lý N, Q lớn hiệu quả (không mô phỏng từng giây).
+
+  Ý tưởng (tóm tắt):
+  - Với mỗi truy vấn, xuống ngay tới thang máy <= S nếu có, còn không thì kết quả = S - T.
+  - Khi ở thang máy i, ta có 2 trường hợp:
+    1) Nếu nhiều lần dùng thang vẫn không chạm thang máy tiếp theo -> chu kỳ lặp (về lại X[i]).
+       Tổng thời gian s chu kỳ: time_s = s + P*(2^s - 1). Dùng binary-search trên s (s nhỏ).
+    2) Nếu sau một lần dùng thang ta vượt/đạt thang máy kế tiếp -> xử lý chuyển sang thang đó.
+  - Để lấy số chu kỳ tối đa có thể lặp trước khi vượt thang tiếp theo, tính trực tiếp smax bằng nhân đôi curP tới khi >= gap.
+  - Sử dụng __int128 để tránh tràn khi tính 2^s * P.
+
+  Sửa lỗi: thay cách tính smax phức tạp bằng vòng lặp nhân đôi, tránh off-by-one.
+*/
+
+#include <bits/stdc++.h>
+using namespace std;
+using int64 = long long;
+using i128 = __int128_t;
+const int64 INF64 = (int64)4e18;
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+    
+    int N;
+    if(!(cin >> N)) return 0;
+    vector<int64> X(N+1), P(N+1);
+    for(int i=1;i<=N;i++){
+        cin >> X[i] >> P[i];
+    }
+    int Q; cin >> Q;
+    while(Q--){
+        int64 S, T;
+        cin >> S >> T;
+        int idx = int(upper_bound(X.begin()+1, X.begin()+N+1, S) - (X.begin()+1)); // count <= S
+        if(idx == 0){
+            cout << S - T << '\n';
+            continue;
+        }
+        int cur = idx;
+        int64 down = S - X[cur];
+        if(down >= T){
+            cout << S - T << '\n';
+            continue;
+        }
+        T -= down;
+        int64 curP = P[cur];
+        while(true){
+            if(T <= 0){
+                cout << X[cur] << '\n'; break;
+            }
+            if(cur == N){
+                // last elevator: can loop returning to same elevator many times
+                auto time_s = [&](int s)->i128{
+                    if(s == 0) return (i128)0;
+                    i128 pow2 = (i128)1 << s;
+                    return (i128)s + (i128)curP * (pow2 - 1);
+                };
+                int lo = 0, hi = 62;
+                while(lo < hi){
+                    int mid = (lo + hi + 1) >> 1;
+                    if(time_s(mid) <= (i128)T) lo = mid; else hi = mid-1;
+                }
+                int s = lo;
+                if(s > 0){
+                    T -= (int64)time_s(s);
+                    curP = (int64)((i128)curP * ((i128)1 << s));
+                }
+                if(T == 0){
+                    cout << X[cur] << '\n'; break;
+                }
+                if(T >= 1){
+                    i128 y128 = (i128)X[cur] + (i128)curP;
+                    int64 y = (y128 > (i128)INF64 ? (int64)INF64 : (int64)y128);
+                    T -= 1;
+                    if(T == 0){
+                        cout << y << '\n'; break;
+                    } else {
+                        cout << y - T << '\n'; break;
+                    }
+                } else {
+                    cout << X[cur] << '\n'; break;
+                }
+            } else {
+                int64 gap = X[cur+1] - X[cur];
+                // compute smax: number of t such that curP * (2^t) < gap
+                int smax = 0;
+                {
+                    i128 temp = curP;
+                    while(temp < (i128)gap){
+                        temp <<= 1;
+                        smax++;
+                        if(smax > 62) break;
+                    }
+                    // smax is count of t where p*2^t < gap
+                }
+                auto time_s = [&](int s)->i128{
+                    if(s == 0) return (i128)0;
+                    i128 pow2 = (i128)1 << s;
+                    return (i128)s + (i128)curP * (pow2 - 1);
+                };
+                int lo = 0, hi = smax;
+                while(lo < hi){
+                    int mid = (lo + hi + 1) >> 1;
+                    if(time_s(mid) <= (i128)T) lo = mid; else hi = mid-1;
+                }
+                int s = lo;
+                if(s > 0){
+                    T -= (int64)time_s(s);
+                    curP = (int64)((i128)curP * ((i128)1 << s));
+                }
+                if(s < smax){
+                    if(T == 0){
+                        cout << X[cur] << '\n'; break;
+                    }
+                    if(T >= 1){
+                        i128 y128 = (i128)X[cur] + (i128)curP;
+                        int64 y = (y128 > (i128)INF64 ? (int64)INF64 : (int64)y128);
+                        T -= 1;
+                        cout << y - T << '\n'; break;
+                    } else {
+                        cout << X[cur] << '\n'; break;
+                    }
+                } else {
+                    // s == smax, try one more use to reach next elevator
+                    if(T == 0){
+                        cout << X[cur] << '\n'; break;
+                    }
+                    i128 y128 = (i128)X[cur] + (i128)curP;
+                    int64 y = (y128 > (i128)INF64 ? (int64)INF64 : (int64)y128);
+                    T -= 1;
+                    if(T == 0){
+                        cout << y << '\n'; break;
+                    }
+                    int j = int(upper_bound(X.begin()+1, X.begin()+N+1, y) - (X.begin()+1));
+                    if(j == 0){
+                        cout << y - T << '\n'; break;
+                    }
+                    int next = j;
+                    int64 walk = y - X[next];
+                    if(walk > T){
+                        cout << y - T << '\n'; break;
+                    } else {
+                        T -= walk;
+                        cur = next;
+                        curP = P[cur];
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}

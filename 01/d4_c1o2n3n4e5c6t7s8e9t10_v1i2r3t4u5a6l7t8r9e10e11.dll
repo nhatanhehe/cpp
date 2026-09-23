@@ -1,0 +1,185 @@
+#include <bits/stdc++.h>
+#define task "a"
+#define int long long
+#define ll long long
+#define ld long double
+#define ii pair<int, int>
+#define fi first
+#define se second
+#define mems(x, y) memset(x, y, sizeof(x));
+using namespace std;
+const int mod = 1e9 + 7, moi = 3e5 + 9;
+const ll INF = 1e18;
+const ld EFS = 1e-12;
+const int dx[] = { 1, -1, 0, 0};
+const int dy[] = { 0, 0, 1, -1};
+
+struct pt {
+
+};
+
+int n, up[moi][20], rmq[moi][20], h[moi], in[moi], out[moi], cnt = 0, lg[moi];
+vector<int> adj[moi];
+bool ok[moi];
+int par[moi], sz[moi];
+
+void make_set(int u) {
+    par[u] = u;
+    sz[u] = 1;
+}
+
+int find_set(int u) {
+    if(u == par[u]) return u;
+    return par[u] = find_set(par[u]);
+}
+
+void union_set(int u, int v) {
+    u = find_set(u);
+    v = find_set(v);
+
+    if(u != v) {
+        if(sz[u] < sz[v]) swap(u, v);
+        sz[u] += sz[v];
+        par[v] = u;
+    }
+}
+
+void dfs(int u, int p = -1) {
+    in[u] = ++cnt;
+    for(int v : adj[u]) {
+        if(v == p) continue;
+
+        h[v] = h[u] + 1;
+        up[v][0] = u;
+        rmq[v][0] = 1;
+
+        for(int i = 1; i <= lg[n]; i++) {
+            up[v][i] = up[up[v][i - 1]][i - 1];
+            rmq[v][i] = rmq[v][i - 1] + rmq[up[v][i - 1]][i - 1];
+        }
+
+        dfs(v, u);
+    }
+
+    out[u] = cnt;
+}
+
+bool getbit(int t, int x) {
+    return t >> x & 1;
+}
+
+bool cmp(int i, int j) {
+    return in[i] < in[j];
+}
+
+int lca(int u, int v) {
+    if(h[u] < h[v]) swap(u, v);
+
+    int k = h[u] - h[v];
+    int ans = 0;
+
+    for(int i = 0; i <= lg[k]; i++) {
+        if(getbit(k, i)) {
+            ans += rmq[u][i];
+            u = up[u][i];
+        }
+    }
+
+    if(u == v) return u;
+
+    for(int i = lg[h[u]]; i >= 0; i--) {
+        if(up[u][i] != up[v][i]) {
+            ans += up[u][i] + up[v][i];
+            u = up[u][i];
+            v = up[v][i];
+        }
+    }
+
+    return up[u][0];
+}
+
+int dist(int u, int v) {
+    int l = lca(u, v);
+
+    return h[u] + h[v] - 2 * h[l];
+}
+
+void pre() {
+    lg[1] = lg[0] = 0;
+
+    for(int i = 2; i <= n; i++) {
+        lg[i] = lg[i / 2] + 1;
+    }
+}
+
+void Input() {
+    cin >> n;
+    pre();
+
+    for(int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    dfs(1);
+
+    for(int i = 1; i <= n; i++) make_set(i);
+
+    int q;
+    cin >> q;
+
+    for(int i = 1; i <= q; i++) {
+
+        int k;
+        cin >> k;
+
+        vector<int> v;
+
+        for(int j = 1; j <= k; j++) {
+            int x;
+            cin >> x;
+
+            v.push_back(x);
+            ok[x] = true;
+        }
+
+        for(int x : v) {
+            if(ok[up[x][0]]) union_set(x, up[x][0]);
+        }
+
+        ll res = 0;
+
+        for(int x : v) {
+            ok[x] = false;
+            int p = find_set(x);
+
+            if(p == x) {
+                res += sz[p] * (sz[p] - 1) / 2;
+            }
+
+            make_set(x);
+        }
+
+        cout << res << '\n';
+    }
+}
+
+main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    if(fopen(task".inp","r")){
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1;
+    //cin >> t;
+    while (t --) {
+        Input();
+    }
+
+    cerr << "Time: " << (1.0 * clock() / CLOCKS_PER_SEC) << " s.\n";
+}

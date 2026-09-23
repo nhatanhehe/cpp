@@ -1,0 +1,121 @@
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+typedef long long ll;
+
+// Sử dụng giá trị cực lớn để tránh tràn số khi cộng dồn tag
+const ll LLINF = 2e18;
+
+// Cấu trúc Tag đại diện cho hàm f(v) = max(v + a, b)
+struct Tag {
+    ll a, b;
+};
+
+// Hợp nhất hai tag: t2(t1(v))
+Tag compose(const Tag &t1, const Tag &t2) {
+    ll na = max(-LLINF, t1.a + t2.a);
+    ll nb = max(-LLINF, max(t1.b + t2.a, t2.b));
+    return {na, nb};
+}
+
+struct Node {
+    Tag cur; // Tag cho giá trị hiện tại
+    Tag his; // Tag cho giá trị cực đại lịch sử
+} tree[2000005];
+
+ll a_init[500005];
+
+// Áp dụng tag vào một nút trên cây
+void apply(int p, const Tag &c, const Tag &h) {
+    // Cập nhật cực đại lịch sử: max(his_old, h(cur_old))
+    tree[p].his.a = max(tree[p].his.a, max(-LLINF, tree[p].cur.a + h.a));
+    tree[p].his.b = max(tree[p].his.b, max(-LLINF, max(tree[p].cur.b + h.a, h.b)));
+
+    // Cập nhật tag hiện tại
+    tree[p].cur = compose(tree[p].cur, c);
+}
+
+void push_down(int p) {
+    apply(p << 1, tree[p].cur, tree[p].his);
+    apply(p << 1 | 1, tree[p].cur, tree[p].his);
+    // Reset về hàm đồng nhất: f(v) = max(v + 0, -inf)
+    tree[p].cur = {0, -LLINF};
+    tree[p].his = {0, -LLINF};
+}
+
+void build(int p, int l, int r) {
+    tree[p].cur = {0, -LLINF};
+    tree[p].his = {0, -LLINF};
+    if (l == r) return;
+    int mid = (l + r) >> 1;
+    build(p << 1, l, mid);
+    build(p << 1 | 1, mid + 1, r);
+}
+
+void update(int p, int l, int r, int ql, int qr, const Tag &c, const Tag &h) {
+    if (ql <= l && r <= qr) {
+        apply(p, c, h);
+        return;
+    }
+    push_down(p);
+    int mid = (l + r) >> 1;
+    if (ql <= mid) update(p << 1, l, mid, ql, qr, c, h);
+    if (qr > mid) update(p << 1 | 1, mid + 1, r, ql, qr, c, h);
+}
+
+void query(int p, int l, int r, int pos, ll &cv, ll &hv) {
+    if (l == r) {
+        cv = max(a_init[l] + tree[p].cur.a, tree[p].cur.b);
+        hv = max(a_init[l], max(a_init[l] + tree[p].his.a, tree[p].his.b));
+        return;
+    }
+    push_down(p);
+    int mid = (l + r) >> 1;
+    if (pos <= mid) query(p << 1, l, mid, pos, cv, hv);
+    else query(p << 1 | 1, mid + 1, r, pos, cv, hv);
+}
+
+int main() {
+    // Tối ưu tốc độ cin/cout cho bài toán lớn
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m;
+    if (!(cin >> n >> m)) return 0;
+
+    for (int i = 1; i <= n; i++) cin >> a_init[i];
+
+    build(1, 1, n);
+
+    while (m--) {
+        int t; cin >> t;
+        if (t == 1) { // Thêm nước: a_i = a_i + x
+            int l, r; ll x; cin >> l >> r >> x;
+            Tag tg = {x, -LLINF};
+            update(1, 1, n, l, r, tg, tg);
+        } else if (t == 2) { // Rút nước: a_i = max(0, a_i - x)
+            int l, r; ll x; cin >> l >> r >> x;
+            Tag tg = {-x, 0};
+            Tag htg = {0, -LLINF}; // Rút nước không làm tăng cực đại lịch sử
+            update(1, 1, n, l, r, tg, htg);
+        } else if (t == 3) { // Gán nước: a_i = x
+            int l, r; ll x; cin >> l >> r >> x;
+            Tag tg = {-LLINF, x};
+            Tag htg = {0, x}; // Cực đại lịch sử có thể là x
+            update(1, 1, n, l, r, tg, htg);
+        } else if (t == 4) { // Truy vấn giá trị hiện tại
+            int y; cin >> y;
+            ll cv, hv; query(1, 1, n, y, cv, hv);
+            cout << cv << "\n";
+        } else if (t == 5) { // Truy vấn cực đại lịch sử (vết nước)
+            int y; cin >> y;
+            ll cv, hv; query(1, 1, n, y, cv, hv);
+            cout << hv << "\n";
+        }
+    }
+
+    return 0;
+}

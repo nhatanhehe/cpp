@@ -1,0 +1,27 @@
+int n;
+vector<long long> a, block;
+int B;
+
+void build() {
+    B = sqrt(n) + 1;
+    block.assign(B + 1, 0);
+    for (int i = 0; i < n; i++)
+        block[i / B] += a[i];
+}
+
+long long query(int l, int r) { // [l, r]
+    long long res = 0;
+    while (l <= r && l % B != 0) res += a[l++];
+    while (l + B - 1 <= r) {
+        res += block[l / B];
+        l += B;
+    }
+    while (l <= r) res += a[l++];
+    return res;
+}
+
+void update(int i, long long v) {
+    block[i / B] += v - a[i];
+    a[i] = v;
+}
+

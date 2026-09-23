@@ -1,0 +1,116 @@
+/*
+ * =============================================================
+ * TÓM TẮT ĐỀ BÀI: (Bài toán Phân phối gói dữ liệu - Image 3)
+ * - Có n loại gói dữ liệu, mỗi loại có: màu (1 đến k), kích thước (s) và chi phí (e).
+ * - Yêu cầu: Chọn một multiset các gói dữ liệu sao cho số lượng gói của mỗi màu
+ * (từ 1 đến k) là bằng nhau.
+ * - Với mỗi số dư r từ 0 đến m-1, tìm chi phí thấp nhất để tổng kích thước các
+ * gói chia cho m có số dư là r.
+ * * GIẢI THUẬT:
+ * 1. Quy hoạch động (DP):
+ * - Mục tiêu: Tìm chi phí nhỏ nhất để tạo ra một "bộ đơn vị" (gồm đúng 1 gói
+ * cho mỗi màu từ 1 đến k) cho mọi số dư modulo m khả thi.
+ * - dp[r]: Chi phí thấp nhất để chọn 1 gói cho mỗi màu từ 1 đến màu hiện tại
+ * sao cho tổng kích thước chia m dư r.
+ * 2. Đồ thị số dư (Modular Shortest Path):
+ * - Coi mỗi "bộ đơn vị" tìm được ở bước 1 là một vật phẩm có thể chọn vô hạn lần.
+ * - Đây trở thành bài toán Knapsack vô hạn hoặc tìm đường đi ngắn nhất trên đồ thị số dư.
+ * - Sử dụng thuật toán Dijkstra trên m đỉnh (tương ứng số dư 0 đến m-1) để tìm
+ * chi phí tối ưu cho mọi số dư r.
+ * =============================================================
+ * ∧＿∧
+ * (　･∀･)
+ * (　つ┳⊃
+ * ε (_)へ⌒ヽﾌ
+ * (　　(　･ω･)
+ * ◎―◎   ⊃  ⊃
+ * BePhuongSuperSuwi
+ * From TK4 - CHT
+ * ㅤㅤ／ ⌒＼____
+ * 　 /・　　 ）　　\
+ * 　/ノへ ノ　　　 /|
+ * ノ　　  ＼\ |/_/_/
+ */
+
+#include <bits/stdc++.h>
+#define task "main"
+#define endl '\n'
+using namespace std;
+
+const long long oo = 4e18;
+const int MAXM = 7005;
+
+int n, k, m;
+vector<pair<int,int>> col[MAXM];
+long long dista[MAXM];
+
+// Thuật toán Dijkstra trên đồ thị số dư modulo m
+void dijkstra_mod(const vector<pair<int,long long>> &baseEdges){
+    vector<char> explored(m,0);
+    fill(dista, dista+m, oo);
+    dista[0] = 0;
+
+    for(int discovered=0; discovered<m; discovered++){
+        int best = -1;
+        long long bestCost = oo;
+        for(int i=0;i<m;i++){
+            if(!explored[i] && dista[i]<bestCost){
+                bestCost = dista[i];
+                best = i;
+            }
+        }
+        if(best==-1) break;
+        explored[best] = 1;
+
+        for(auto &p : baseEdges){
+            int v = (best + p.first)%m;
+            long long cost = p.second;
+            if(dista[v] > dista[best]+cost)
+                dista[v] = dista[best]+cost;
+        }
+    }
+}
+
+int main(){
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    if (!(cin >> n >> k >> m)) return 0;
+    for(int i=1;i<=n;i++){
+        int c,s,e; cin >> c >> s >> e;
+        s %= m;
+        col[c].push_back({s,e});
+    }
+
+    // DP tìm chi phí nhỏ nhất để có đúng 1 gói mỗi màu (từ 1 đến k)
+    vector<long long> dp(m,oo), ndp(m,oo);
+    dp[0] = 0;
+
+    for(int j=1;j<=k;j++){
+        fill(ndp.begin(), ndp.end(), oo);
+        for(int r=0;r<m;r++){
+            if(dp[r]==oo) continue;
+            for(auto &it : col[j]){
+                int s = it.first;
+                long long cost = it.second;
+                int nr = (r+s)%m;
+                ndp[nr] = min(ndp[nr], dp[r]+cost);
+            }
+        }
+        dp = ndp;
+    }
+
+    // Chuyển kết quả DP thành các cạnh để chạy Dijkstra
+    vector<pair<int,long long>> baseEdges;
+    for(int i=0;i<m;i++)
+        if(dp[i]!=oo)
+            baseEdges.push_back({i, dp[i]});
+
+    dijkstra_mod(baseEdges);
+
+    for(int i=0;i<m;i++){
+        if(dista[i]==oo) cout << -1 << endl;
+        else cout << dista[i] << endl;
+    }
+    return 0;
+}

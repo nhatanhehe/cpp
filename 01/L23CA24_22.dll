@@ -1,0 +1,117 @@
+#include <bits/stdc++.h>
+#define task "a"
+#define ll long long
+#define ld long double
+#define ii pair<int, int>
+#define fi first
+#define se second
+#define all(x) x.begin(), x.end()
+#define mems(x, y) memset(x, y, sizeof(x));
+using namespace std;
+const int mod = 1e9 + 7, moi = 2e5 + 9;
+const ll INF = 1e18;
+const ld EFS = 1e-12;
+const int dx[] = { 1, -1, 0, 0};
+const int dy[] = { 0, 0, 1, -1};
+
+struct pt {
+
+};
+
+int n, a[moi];
+int h[moi], up[moi][20], lg[moi];
+vector<int> adj[moi];
+
+void dfs(int u) {
+    for(int v: adj[u]) {
+        if(v == up[u][0]) continue;
+        h[v] = h[u] + 1;
+        up[v][0] = u;
+
+        for(int j = 1; j <= lg[n]; j ++) {
+            up[v][j] = up[up[v][j - 1]][j - 1];
+
+        }
+
+        dfs(v);
+    }
+}
+
+int lca(int u, int v) {
+    if(h[u] < h[v]) swap(u, v);
+
+    int k = h[u] - h[v];
+    for(int j = 0; (1 << j) <= k; j++) {
+        if(k >> j & 1) u = up[u][j];
+    }
+
+    if(u == v) return u;
+
+    for(int j = lg[h[u]]; j >= 0; j--) {
+        if(up[u][j] != up[v][j]) {
+            u = up[u][j];
+            v = up[v][j];
+        }
+    }
+
+    return up[u][0];
+}
+
+int anc_k(int u, int k) {
+    for(int j = 0; (1 << j) <= k; j++) {
+        if(k >> j & 1) u = up[u][j];
+    }
+
+    return u;
+}
+
+int dist(int u, int v) {
+    int l = lca(u, v);
+
+    return h[u] + h[v] - 2 * h[l];
+}
+
+void pre() {
+    lg[1] = 0;
+    for(int i = 2; i <= n; i++) {
+        lg[i] = lg[i / 2] + 1;
+    }
+}
+
+void Input() {
+    cin >> n;
+    pre();
+
+    for(int i = 1; i <= n; i++) cin >> a[i];
+
+    for(int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    dfs(1);
+}
+
+int main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    if(fopen(task".inp","r")){
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1;
+    //cin >> t;
+    while (t --) {
+        Input();
+    }
+
+    cerr << "Time: " << (1.0 * clock() / CLOCKS_PER_SEC) << " s.\n";
+}
+
+
+

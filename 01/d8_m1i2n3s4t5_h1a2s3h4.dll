@@ -1,0 +1,163 @@
+/**
+ * BÀI TOÁN: MINSTR - Quà 20/10
+ * * * TÓM TẮT ĐỀ BÀI:
+ * - Cho xâu A (độ dài N) và tập M xâu "xấu".
+ * - B_i là các xâu xoay vòng của A.
+ * - "Độ xấu" của B_i: Độ dài xâu con dài nhất của B_i mà cũng là xâu con của một xâu trong M.
+ * - Yêu cầu: Tìm độ xấu nhỏ nhất trong các cách xoay B_i.
+ * * * GIẢI PHÁP:
+ * 1. Xây dựng Suffix Automaton (SAM) từ tất cả các xâu trong tập M. 
+ * SAM đại diện cho tất cả các xâu con có thể có của tập M.
+ * 2. Nhân đôi xâu A thành S = A + A. Duyệt S qua SAM để tính f[j]:
+ * f[j] là độ dài của xâu con dài nhất kết thúc tại S[j] mà thuộc tập SAM (tức là xâu con của M).
+ * 3. Chặt nhị phân tìm giá trị độ xấu nhỏ nhất K:
+ * - Một vị trí j trong S có f[j] > K nghĩa là có một xâu "xấu" độ dài K+1 kết thúc tại j.
+ * - Xâu xấu này nằm trọn trong cửa sổ xoay bắt đầu tại i nếu:
+ * i <= j - K (để xâu xấu bắt đầu sau i) và i >= j - N + 1 (để xâu xấu kết thúc trước i+N).
+ * - Dùng mảng hiệu (difference array) để đánh dấu các vị trí i bị cấm.
+ */
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <map>
+
+using namespace std;
+
+const int MAXN = 200005;
+
+struct Node {
+    int len, link;
+    int next[26];
+};
+
+Node st[MAXN * 2];
+int sz, last;
+
+void sam_init() {
+    for (int i = 0; i < MAXN * 2; i++) {
+        st[i].len = 0;
+        st[i].link = -1;
+        for (int j = 0; j < 26; j++) st[i].next[j] = 0;
+    }
+    st[0].len = 0;
+    st[0].link = -1;
+    sz = 1;
+    last = 0;
+}
+
+void sam_extend(int c) {
+    if (st[last].next[c]) {
+        int p = last;
+        int q = st[p].next[c];
+        if (st[p].len + 1 == st[q].len) {
+            last = q;
+        } else {
+            int clone = sz++;
+            st[clone].len = st[p].len + 1;
+            for (int i = 0; i < 26; i++) st[clone].next[i] = st[q].next[i];
+            st[clone].link = st[q].link;
+            while (p != -1 && st[p].next[c] == q) {
+                st[p].next[c] = clone;
+                p = st[p].link;
+            }
+            st[q].link = clone;
+            last = clone;
+        }
+        return;
+    }
+    int cur = sz++;
+    st[cur].len = st[last].len + 1;
+    int p = last;
+    while (p != -1 && !st[p].next[c]) {
+        st[p].next[c] = cur;
+        p = st[p].link;
+    }
+    if (p == -1) {
+        st[cur].link = 0;
+    } else {
+        int q = st[p].next[c];
+        if (st[p].len + 1 == st[q].len) {
+            st[cur].link = q;
+        } else {
+            int clone = sz++;
+            st[clone].len = st[p].len + 1;
+            for (int i = 0; i < 26; i++) st[clone].next[i] = st[q].next[i];
+            st[clone].link = st[q].link;
+            while (p != -1 && st[p].next[c] == q) {
+                st[p].next[c] = clone;
+                p = st[p].link;
+            }
+            st[q].link = st[cur].link = clone;
+        }
+    }
+    last = cur;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, M;
+    if (!(cin >> N >> M)) return 0;
+    string A;
+    cin >> A;
+
+    sam_init();
+    for (int i = 0; i < M; i++) {
+        string bad;
+        cin >> bad;
+        last = 0; // Reset last for Generalized SAM
+        for (char c : bad) sam_extend(c - 'a');
+    }
+
+    string S = A + A;
+    vector<int> f(2 * N);
+    int cur = 0, l = 0;
+    for (int i = 0; i < 2 * N; i++) {
+        int c = S[i] - 'a';
+        while (cur != 0 && !st[cur].next[c]) {
+            cur = st[cur].link;
+            l = st[cur].len;
+        }
+        if (st[cur].next[c]) {
+            cur = st[cur].next[c];
+            l++;
+        }
+        f[i] = min(l, N);
+    }
+
+    auto check = [&](int K) {
+        vector<int> diff(N + 1, 0);
+        for (int j = 0; j < 2 * N - 1; j++) {
+            if (f[j] > K) {
+                int L = max(0, j - N + 1);
+                int R = min(N - 1, j - K);
+                if (L <= R) {
+                    diff[L]++;
+                    diff[R + 1]--;
+                }
+            }
+        }
+        int cur_forbidden = 0;
+        for (int i = 0; i < N; i++) {
+            cur_forbidden += diff[i];
+            if (cur_forbidden == 0) return true;
+        }
+        return false;
+    };
+
+    int low = 0, high = N, ans = N;
+    while (low <= high) {
+        int mid = (low + high) / 2;
+        if (check(mid)) {
+            ans = mid;
+            high = mid - 1;
+        } else {
+            low = mid + 1;
+        }
+    }
+
+    cout << ans << endl;
+    return 0;
+}

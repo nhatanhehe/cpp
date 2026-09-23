@@ -1,0 +1,94 @@
+struct Dinic {
+    struct Edge {
+        int to, rev;
+        ll flow, cap;
+    };
+
+    int n, s, t;
+    vector<vector<Edge>> g;
+    vector<int> level, work;
+
+    Dinic(int n = 0) {
+        init(n);
+    }
+
+    void init(int n_) {
+        n = n_;
+        g.assign(n + 1, {});
+        level.assign(n + 1, 0);
+        work.assign(n + 1, 0);
+    }
+
+    void add_edge(int u, int v, ll cap) {
+        Edge a = {v, (int)g[v].size(), 0, cap};
+        Edge b = {u, (int)g[u].size(), 0, 0};
+        g[u].push_back(a);
+        g[v].push_back(b);
+    }
+
+    bool bfs() {
+        fill(level.begin(), level.end(), -1);
+        queue<int> q;
+        q.push(s);
+        level[s] = 0;
+
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (auto &e : g[u]) {
+                if (level[e.to] < 0 && e.flow < e.cap) {
+                    level[e.to] = level[u] + 1;
+                    q.push(e.to);
+                }
+            }
+        }
+        return level[t] >= 0;
+    }
+
+    ll dfs(int u, ll pushed) {
+        if (pushed == 0) return 0;
+        if (u == t) return pushed;
+
+        for (int &i = work[u]; i < (int)g[u].size(); i++) {
+            Edge &e = g[u][i];
+            if (level[e.to] == level[u] + 1 && e.flow < e.cap) {
+                ll tr = dfs(e.to, min(pushed, e.cap - e.flow));
+                if (tr == 0) continue;
+                e.flow += tr;
+                g[e.to][e.rev].flow -= tr;
+                return tr;
+            }
+        }
+        return 0;
+    }
+
+    ll maxflow(int source, int sink) {
+        s = source;
+        t = sink;
+        ll flow = 0;
+        while (bfs()) {
+            fill(work.begin(), work.end(), 0);
+            while (ll pushed = dfs(s, INF))
+                flow += pushed;
+        }
+        return flow;
+    }
+};
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m, s, t;
+    cin >> n >> m >> s >> t;
+
+    Dinic dinic(n);
+
+    for (int i = 1; i <= m; i++) {
+        int u, v;
+        ll c;
+        cin >> u >> v >> c;
+        dinic.add_edge(u, v, c);
+    }
+
+    cout << dinic.maxflow(s, t);
+    return 0;
+}

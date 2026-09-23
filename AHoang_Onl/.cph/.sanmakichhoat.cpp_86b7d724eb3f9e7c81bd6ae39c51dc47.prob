@@ -1,0 +1,1 @@
+{"name":"Local: sanmakichhoat","url":"e:\\cpp\\AHoang_Onl\\sanmakichhoat.cpp","tests":[{"id":1789655713991,"input":"6 5\n14 9 7 15 10 6\n4 6\n2 5\n3 3\n1 2\n1 6\n","output":"7\n11\n2\n5\n11\n"}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\AHoang_Onl\\sanmakichhoat.cpp","group":"local","local":true}

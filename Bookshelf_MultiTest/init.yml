@@ -1,0 +1,35 @@
+subtasks:
+  - id: 1
+    name: "Subtask 1"
+    description: "Small constraints (N ≤ 10)"
+    points: 20
+    file_range: "1-10"
+    constraints:
+      N_max: 10
+      L_max: 1000000000
+      H_max: 1000000000
+      W_max: 1000000000
+  - id: 2
+    name: "Subtask 2"
+    description: "Medium constraints (N ≤ 2000)"
+    points: 30
+    file_range: "11-25"
+    constraints:
+      N_max: 2000
+      L_max: 1000000000
+      H_max: 1000000000
+      W_max: 1000000000
+  - id: 3
+    name: "Subtask 3"
+    description: "Large constraints (N ≤ 100000) with mixed killer cases"
+    points: 50
+    file_range: "26-50"
+    constraints:
+      N_max: 100000
+      L_max: 1000000000
+      H_max: 1000000000
+      W_max: 1000000000
+      killer_cases_per_file: [1, 2]
+      total_N_limit_per_file: 300000
+      normal_N_range: [20000, 50000]
+      killer_W_range: [1, 5]

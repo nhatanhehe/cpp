@@ -1,0 +1,51 @@
+vector<int> euler;
+int firstIdx[N];
+vector<vector<int>> st;
+vector<int> lg2;
+
+void dfs_euler(int u,int p,int depth){
+    h[u]=depth;
+    firstIdx[u] = (int)euler.size();
+    euler.pb(u);
+    for(int v:g[u]){
+        if(v==p) continue;
+        dfs_euler(v,u,depth+1);
+        euler.pb(u);
+    }
+}
+
+void build_rmq(){
+    int m = (int)euler.size();
+    lg2.assign(m+1, 0);
+    for(int i=2;i<=m;i++) lg2[i] = lg2[i/2]+1;
+    int K = lg2[m] + 1;
+    st.assign(K, vector<int>(m));
+    for(int i=0;i<m;i++) st[0][i] = euler[i];
+    for(int k=1;k<K;k++){
+        int len = 1<<k;
+        int half = 1<<(k-1);
+        for(int i=0;i + len -1 < m; i++){
+            int a = st[k-1][i];
+            int b = st[k-1][i+half];
+            st[k][i] = (h[a] < h[b] ? a : b);
+        }
+    }
+}
+
+int lca(int u, int v) {
+    int L = firstIdx[u];
+    int R = firstIdx[v];
+    if(L > R) swap(L,R);
+    int len = R - L + 1;
+    int k = lg2[len];
+    int a = st[k][L];
+    int b = st[k][R - (1<<k) + 1];
+    return (h[a] < h[b] ? a : b);
+}
+
+void prelca() {
+    euler.clear();
+    for(int i=1;i<=n;i++) firstIdx[i] = -1;
+    dfs_euler(1, -1, 0);
+    build_rmq();
+}

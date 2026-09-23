@@ -1,0 +1,103 @@
+/*
+  Bài: NUMCITIES - Xây dựng thành phố
+
+  TÓM TẮT ĐỀ:
+  - Xét đoạn nguyên [0, n].
+  - Một "thành phố hoàn hảo" là một tập không rỗng các điểm nguyên trên đoạn đó
+    sao cho các điểm tạo thành một cấp số cộng (khoảng cách giữa các điểm kề nhau bằng nhau).
+  - Hai thành phố khác nhau nếu tập điểm khác nhau.
+  - Với mỗi n, hãy đếm số thành phố hoàn hảo, lấy modulo 1e9+7.
+
+  PHÂN TÍCH:
+  1) Các tập có 1 phần tử:
+     - Có đúng (n + 1) cách (chọn 1 điểm bất kỳ từ 0..n).
+
+  2) Các tập có >= 2 phần tử:
+     - Biểu diễn dưới dạng: a, a + d, a + 2d, ..., a + m*d
+       với:
+         + d >= 1 (khoảng cách)
+         + m >= 1 (số bước, số phần tử = m+1)
+         + a + m*d <= n
+     - Với d cố định:
+         + m chạy từ 1..floor(n/d)
+         + Với mỗi m, số cách chọn a là (n - m*d + 1)
+
+     => Tổng cần tính:
+        S = sum_{d=1..n} sum_{m=1..floor(n/d)} (n - m*d + 1)
+
+  3) Tối ưu:
+     - Nhóm các d có cùng t = floor(n/d)
+     - Duyệt theo từng đoạn [d..last] sao cho floor(n/d) không đổi
+     - Độ phức tạp: O(sqrt(n)) mỗi test
+
+  4) Kết quả:
+     - answer = (n + 1) + S   (mod 1e9+7)
+
+  LƯU Ý:
+  - Không dùng __int128
+  - Mọi phép nhân đều lấy modulo sớm để tránh overflow
+*/
+
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+const ll MOD = 1000000007LL;
+
+// (a * b) % MOD an toàn với ll
+ll mul(ll a, ll b) {
+    return (a % MOD) * (b % MOD) % MOD;
+}
+
+// tổng 1 + 2 + ... + n % MOD
+ll sum1(ll n) {
+    n %= MOD;
+    return mul(n, (n + 1) * ((MOD + 1) / 2) % MOD);
+}
+
+// tổng L + (L+1) + ... + R % MOD
+ll sum_range(ll L, ll R) {
+    return (sum1(R) - sum1(L - 1) + MOD) % MOD;
+}
+
+ll solve(ll n) {
+    ll S = 0;
+
+    for (ll d = 1; d <= n; ) {
+        ll t = n / d;
+        ll last = n / t;
+
+        ll cnt = (last - d + 1) % MOD;
+        ll sum_d = sum_range(d, last); // d + ... + last
+
+        // term1 = cnt * (n+1) * t
+        ll term1 = mul(cnt, mul((n + 1) % MOD, t % MOD));
+
+        // term2 = (t*(t+1)/2) * sum_d
+        ll tmp = mul(t % MOD, (t + 1) % MOD);
+        tmp = mul(tmp, (MOD + 1) / 2); // chia 2
+        ll term2 = mul(tmp, sum_d);
+
+        S = (S + term1 - term2 + MOD) % MOD;
+
+        d = last + 1;
+    }
+
+    // cộng các tập có 1 phần tử
+    ll ans = (S + (n + 1) % MOD) % MOD;
+    return ans;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int q;
+    cin >> q;
+    while (q--) {
+        ll n;
+        cin >> n;
+        cout << solve(n) << '\n';
+    }
+    return 0;
+}

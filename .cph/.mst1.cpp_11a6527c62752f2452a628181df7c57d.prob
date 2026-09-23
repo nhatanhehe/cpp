@@ -1,0 +1,1 @@
+{"name":"Local: mst1","url":"e:\\cpp\\mst1.cpp","tests":[{"id":1777101950065,"input":"5\n0 1\n1 4\n2 2\n3 0\n4 3","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\mst1.cpp","group":"local","local":true}

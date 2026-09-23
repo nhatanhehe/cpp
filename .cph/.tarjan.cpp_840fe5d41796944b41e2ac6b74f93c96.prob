@@ -1,0 +1,1 @@
+{"name":"Local: tarjan","url":"e:\\cpp\\tarjan.cpp","tests":[{"id":1787051789964,"input":"3 2\n1 2\n2 3\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\tarjan.cpp","group":"local","local":true}

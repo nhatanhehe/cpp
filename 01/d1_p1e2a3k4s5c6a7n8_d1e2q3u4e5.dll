@@ -1,0 +1,141 @@
+/*
+ * Tóm tắt:
+ * - Tính tổng sliding window maximum f(k) với k thay đổi và cập nhật a[p] = a[p] + 1.
+ * - Khởi tạo: Mỗi cửa sổ [i, i+k-1] có một max duy nhất. Để không đếm trùng, ta quy ước
+ * phần tử max ở vị trí trái nhất sẽ "đóng góp" giá trị vào tổng.
+ * - Cập nhật: Khi a[p] tăng 1, f(k) tăng thêm đúng bằng số lượng cửa sổ độ dài k
+ * mà a[p] đang là giá trị lớn nhất (có thể có các phần tử khác bằng a[p]).
+ * - Kỹ thuật: Sử dụng 2 cây Fenwick để quản lý sai phân bậc 2 của f(k),
+ * giúp cập nhật hàm hình thang và truy vấn f(k) trong O(log N).
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <stack>
+
+using namespace std;
+
+typedef long long ll;
+
+const int MAXN = 500005;
+int n, q;
+ll a[MAXN];
+ll tree[4 * MAXN];
+
+// Segment Tree để tìm L, R (vị trí có giá trị > a[p]) trong O(log N)
+void build(int v, int tl, int tr) {
+    if (tl == tr) tree[v] = a[tl];
+    else {
+        int tm = (tl + tr) / 2;
+        build(2 * v, tl, tm);
+        build(2 * v + 1, tm + 1, tr);
+        tree[v] = max(tree[2 * v], tree[2 * v + 1]);
+    }
+}
+
+void update_tree(int v, int tl, int tr, int pos, ll val) {
+    if (tl == tr) tree[v] = val;
+    else {
+        int tm = (tl + tr) / 2;
+        if (pos <= tm) update_tree(2 * v, tl, tm, pos, val);
+        else update_tree(2 * v + 1, tm + 1, tr, pos, val);
+        tree[v] = max(tree[2 * v], tree[2 * v + 1]);
+    }
+}
+
+int find_L(int v, int tl, int tr, int l, int r, ll val) {
+    if (tl > r || tr < l || tree[v] <= val) return 0;
+    if (tl == tr) return tl;
+    int tm = (tl + tr) / 2;
+    int res = find_L(2 * v + 1, tm + 1, tr, l, r, val);
+    if (res == 0) res = find_L(2 * v, tl, tm, l, r, val);
+    return res;
+}
+
+int find_R(int v, int tl, int tr, int l, int r, ll val) {
+    if (tl > r || tr < l || tree[v] <= val) return n + 1;
+    if (tl == tr) return tl;
+    int tm = (tl + tr) / 2;
+    int res = find_R(2 * v, tl, tm, l, r, val);
+    if (res == n + 1) res = find_R(2 * v + 1, tm + 1, tr, l, r, val);
+    return res;
+}
+
+struct BIT {
+    ll bit[MAXN + 5];
+    void update(int i, ll val) {
+        for (; i <= n + 1; i += i & -i) bit[i] += val;
+    }
+    ll query(int i) {
+        ll res = 0;
+        for (; i > 0; i -= i & -i) res += bit[i];
+        return res;
+    }
+} b1, b2;
+
+// Thêm hàm hình thang (số cửa sổ độ dài k chứa p trong đoạn (L, R))
+void add_trapezoid(int x, int y, ll h) {
+    if (x <= 0 || y <= 0) return;
+    if (x > y) swap(x, y);
+    // Các điểm thay đổi độ dốc của hàm số: 1, x+1, y+1, x+y+1
+    b1.update(1, h);
+    b1.update(x + 1, -h);
+    b1.update(y + 1, -h);
+    b1.update(x + y + 1, h);
+
+    b2.update(1, h);
+    b2.update(x + 1, -h * (x + 1));
+    b2.update(y + 1, -h * (y + 1));
+    b2.update(x + y + 1, h * (x + y + 1));
+}
+
+ll get_ans(int k) {
+    return (ll)(k + 1) * b1.query(k) - b2.query(k);
+}
+
+int main() {
+    ios::sync_with_stdio(false); cin.tie(0);
+    if (!(cin >> n >> q)) return 0;
+    for (int i = 1; i <= n; i++) cin >> a[i];
+
+    build(1, 1, n);
+
+    // Khởi tạo f(k) ban đầu bằng Monotonic Stack
+    vector<int> L(n + 1), R(n + 1);
+    stack<int> s;
+    for (int i = 1; i <= n; i++) {
+        while (!s.empty() && a[s.top()] <= a[i]) s.pop();
+        L[i] = s.empty() ? 0 : s.top();
+        s.push(i);
+    }
+    while (!s.empty()) s.pop();
+    for (int i = n; i >= 1; i--) {
+        // Sử dụng dấu < để R_i là vị trí đầu tiên >= a[i], tránh đếm trùng
+        while (!s.empty() && a[s.top()] < a[i]) s.pop();
+        R[i] = s.empty() ? n + 1 : s.top();
+        s.push(i);
+    }
+
+    for (int i = 1; i <= n; i++) {
+        add_trapezoid(i - L[i], R[i] - i, a[i]);
+    }
+
+    while (q--) {
+        int type; cin >> type;
+        if (type == 1) {
+            int k; cin >> k;
+            cout << get_ans(k) << "\n";
+        } else {
+            int p; cin >> p;
+            // Tìm khoảng mà a[p] đang là giá trị lớn nhất (có thể không duy nhất)
+            int l = find_L(1, 1, n, 1, p - 1, a[p]);
+            int r = find_R(1, 1, n, p + 1, n, a[p]);
+            // Khi a[p] tăng 1, mọi cửa sổ mà nó là max sẽ tăng tổng lên 1
+            add_trapezoid(p - l, r - p, 1);
+            a[p]++;
+            update_tree(1, 1, n, p, a[p]);
+        }
+    }
+    return 0;
+}

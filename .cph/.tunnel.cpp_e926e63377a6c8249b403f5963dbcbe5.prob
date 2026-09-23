@@ -1,0 +1,1 @@
+{"name":"Local: tunnel","url":"e:\\cpp\\tunnel.cpp","tests":[{"id":1777104459886,"input":"6 10 2 4\n2 1 9 1\n5 2 4 7\n1 5 2 6\n6 3 2 2\n4 5 1 1\n2 6 3 4\n1 6 5 2\n6 5 2 3\n3 4 2 3\n3 5 3 1","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\tunnel.cpp","group":"local","local":true}

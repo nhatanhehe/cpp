@@ -1,0 +1,1 @@
+{"name":"Local: period","url":"e:\\cpp\\period.cpp","tests":[{"id":1786026686385,"input":"1 3\n2 1 9\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\period.cpp","group":"local","local":true}

@@ -1,0 +1,132 @@
+/*
+ * TÓM TẮT ĐỀ BÀI:
+ * - Xây dựng xâu độ dài N từ 26 chữ cái Latin thường.
+ * - Cho M mẫu cấm. Xâu tạo ra không được chứa bất kỳ mẫu cấm nào dưới dạng xâu con.
+ * - Tính số lượng xâu thỏa mãn modulo 10^9 + 7.
+ * - Giới hạn: N <= 100, M <= 150.
+ *
+ * GIẢI PHÁP:
+ * - Sử dụng thuật toán Aho-Corasick để quản lý các mẫu cấm.
+ * - Xây dựng cây Trie từ M mẫu cấm. 
+ * - Dùng BFS để xây dựng các đường link thất bại (failure links).
+ * - Một node trên Trie được đánh dấu là "bad" nếu:
+ * 1. Bản thân nó là điểm kết thúc của một mẫu cấm.
+ * 2. Link thất bại của nó dẫn đến một node "bad" (chứa hậu tố là mẫu cấm).
+ * - Quy hoạch động: dp[i][u] là số xâu độ dài i kết thúc tại node u trên Trie.
+ * - Độ phức tạp: O(N * (Tổng độ dài mẫu cấm) * 26).
+ */
+
+#include <iostream>
+#include <vector>
+#include <string>
+#include <queue>
+
+using namespace std;
+
+const int MOD = 1e9 + 7;
+
+struct AhoCorasick {
+    struct Node {
+        int children[26];
+        int fail;
+        bool is_bad;
+        Node() {
+            for (int i = 0; i < 26; i++) children[i] = 0;
+            fail = 0;
+            is_bad = false;
+        }
+    };
+
+    vector<Node> trie;
+
+    AhoCorasick() {
+        trie.emplace_back(); // Root node
+    }
+
+    void insert(const string& s) {
+        int u = 0;
+        for (char c : s) {
+            int v = c - 'a';
+            if (!trie[u].children[v]) {
+                trie[u].children[v] = trie.size();
+                trie.emplace_back();
+            }
+            u = trie[u].children[v];
+        }
+        trie[u].is_bad = true;
+    }
+
+    void build() {
+        queue<int> q;
+        for (int i = 0; i < 26; i++) {
+            if (trie[0].children[i]) {
+                q.push(trie[0].children[i]);
+            }
+        }
+
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+
+            for (int i = 0; i < 26; i++) {
+                int &v = trie[u].children[i];
+                int f = trie[trie[u].fail].children[i];
+                if (v) {
+                    trie[v].fail = f;
+                    // Nếu node thất bại là "bad", thì node hiện tại cũng "bad"
+                    trie[v].is_bad |= trie[f].is_bad;
+                    q.push(v);
+                } else {
+                    v = f; // Nối tắt để tối ưu bước nhảy DP
+                }
+            }
+        }
+    }
+};
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, M;
+    if (!(cin >> N >> M)) return 0;
+
+    AhoCorasick ac;
+    for (int i = 0; i < M; i++) {
+        string s;
+        cin >> s;
+        ac.insert(s);
+    }
+
+    ac.build();
+
+    int num_nodes = ac.trie.size();
+    // dp[i][u]: số xâu độ dài i kết thúc tại trạng thái u
+    vector<vector<int>> dp(N + 1, vector<int>(num_nodes, 0));
+
+    dp[0][0] = 1;
+
+    for (int i = 0; i < N; i++) {
+        for (int u = 0; u < num_nodes; u++) {
+            if (dp[i][u] == 0 || ac.trie[u].is_bad) continue;
+
+            for (int c = 0; c < 26; c++) {
+                int v = ac.trie[u].children[c];
+                if (!ac.trie[v].is_bad) {
+                    dp[i + 1][v] = (dp[i + 1][v] + dp[i][u]) % MOD;
+                }
+            }
+        }
+    }
+
+    long long ans = 0;
+    for (int u = 0; u < num_nodes; u++) {
+        if (!ac.trie[u].is_bad) {
+            ans = (ans + dp[N][u]) % MOD;
+        }
+    }
+
+    cout << ans << endl;
+
+    return 0;
+}

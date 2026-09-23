@@ -1,0 +1,125 @@
+#include<bits/stdc++.h>
+#define ll long long
+using namespace std;
+const int mod=1e9+7,moi=2e5+9;
+const ll INF=1e18;
+int n,m,tplt;
+char a[moi];
+vector<int>adj[moi],adj_1[moi];
+int low[moi],num[moi],S[moi],scc[moi],ap[moi],L[moi];
+bool vis[moi];
+stack<int>T;
+int cnt=0;
+void Tarjan(int u)
+{
+ //cout<<u<<'\n';
+ low[u]=num[u]=++cnt;
+ T.push(u);
+ vis[u]=true;
+ for(int v:adj[u])
+ {
+ // cout<<v<<" ";
+  if(!scc[v])
+  if(num[v])low[u]=min(low[u],num[v]);
+  else
+   {
+    Tarjan(v);
+    low[u]=min(low[u],low[v]);
+   }
+ }
+ if(num[u]==low[u])
+ {
+  //  cout<<tplt+1<<" ";
+    tplt++;
+    S[tplt]=0;
+    int h=-1;
+    while(u!=h)
+    {
+        h=T.top();
+      //  cout<<h<<" ";
+        T.pop();
+        scc[h]=tplt;
+        if(a[h]>='1'&&a[h]<='9')S[tplt]+=a[h]-'0';
+    }
+    //cout<<S[tplt]<<'\n';
+ }
+}
+void Topo()
+{
+  deque<int>T;
+  for(int i=1;i<=n;i++)
+  {
+    L[scc[i]]=S[scc[i]];
+    //cout<<L[scc[i]]<<" "<<S[scc[i]]<<" "<<scc[i]<<" "<<i<<'\n';
+  }
+  T.push_back(scc[1]);
+  while(!T.empty())
+  {
+    int u=T.front();
+    T.pop_front();
+    //cout<<u<<'\n';
+    for(int v:adj_1[u])
+    {
+      ap[v]--;
+      L[v]=max(L[v],L[u]+S[v]);
+      //cout<<v<<" "<<S[v]<<" "<<L[u]<<" "<<L[v]<<'\n';
+      if(ap[v]==0)T.push_back(v);
+    }
+    //cout<<'\n';
+  }
+  int gmax=0;
+  for(int i=1;i<=n;i++)
+  {
+    gmax=max(gmax,L[scc[i]]);
+    //cout<<L[scc[i]]<<" "<<i<<'\n';
+  }
+  cout<<gmax;
+}
+void Solve()
+{
+ Tarjan(1);
+ for(int i=1;i<=n;i++)
+ for(int j:adj[i])
+ {
+     int x=scc[i];
+     int y=scc[j];
+     if(x!=y&&x!=0&&y!=0)
+     {
+        adj_1[x].push_back(y);
+        //cout<<y<<" "<<x<<'\n';
+        ap[y]++;
+     }
+ }
+ Topo();
+}
+void Input()
+{
+  cin>>n>>m;
+  n*=m;
+  for(int i=1;i<=n;i++)
+  {
+    cin>>a[i];
+    //cout<<a[i];
+  }
+  for(int i=1;i<=n;i++)
+  {
+    if(a[i]=='#')continue;
+    if((i+1)%m!=1&&a[i+1]!='#'){adj[i].push_back(i+1);}
+    if(i+m<=n&&a[i+m]!='#'){adj[i].push_back(i+m);}
+    if(a[i]=='W'&&i%m!=1&&a[i-1]!='#'){adj[i].push_back(i-1);}
+    if(a[i]=='N'&&i>m&&a[i-m]!='#'){adj[i].push_back(i-m);}
+  }
+}
+int main()
+{
+ ios_base::sync_with_stdio(false);
+ cin.tie(NULL);
+ cout.tie(NULL);
+ if(fopen("a.inp","r"))
+ {
+ freopen("a.inp","r",stdin);
+ freopen("a.out","w",stdout);
+ }
+ Input();
+ Solve();
+}

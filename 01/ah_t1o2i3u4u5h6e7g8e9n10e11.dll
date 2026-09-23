@@ -1,0 +1,114 @@
+/* * =============================================================================
+ * TÓM TẮT ĐỀ BÀI: (Bài toán Nghiên cứu di truyền - Image 7)
+ * - Cho N chuỗi gene liên tiếp. Có M loại đoạn gene đặc trưng (đánh số từ 1 đến M).
+ * - Mỗi đoạn gene i có:
+ * + Điểm hữu ích: A[i].
+ * + Độ rủi ro sinh học: B[i].
+ * - Một đoạn gene liên tiếp từ chuỗi i đến chuỗi j được xác định bởi tập hợp các
+ * đoạn gene xuất hiện trong ít nhất một chuỗi thuộc phạm vi [i, j].
+ * - Yêu cầu: Tìm đoạn liên tiếp (i, j) sao cho tổng độ rủi ro của các đoạn gene
+ * trong tập hợp đó không vượt quá K, và tổng điểm hữu ích là lớn nhất.
+ *
+ * GIẢI THUẬT:
+ * 1. Ý tưởng chính: Duyệt qua từng chuỗi r (từ 1 đến N) đóng vai trò là điểm kết thúc
+ * của đoạn liên tiếp.
+ * 2. Quản lý các đoạn gene: Duy trì mảng 'last[x]' lưu vị trí xuất hiện cuối cùng
+ * của đoạn gene loại x tính đến chuỗi hiện tại.
+ * 3. Tối ưu hóa: Với một điểm kết thúc r cố định, tập hợp các đoạn gene của đoạn (l, r)
+ * chỉ thay đổi khi l vượt qua một giá trị 'last[x]'.
+ * 4. Xử lý:
+ * - Vì M nhỏ (M <= 100), với mỗi r, ta thu thập tất cả các đoạn gene đã từng xuất hiện
+ * và sắp xếp chúng giảm dần theo 'last[x]'.
+ * - Duyệt qua danh sách đã sắp xếp, điều này tương đương với việc lùi dần điểm bắt đầu l.
+ * - Cộng dồn hữu ích và rủi ro. Nếu tổng rủi ro <= K, cập nhật giá trị hữu ích cực đại.
+ * 5. Độ phức tạp: O(N * M * logM), đáp ứng tốt với N = 2.10^5 và M = 100.
+ * =============================================================================
+ */
+ /*ㅤ∧＿∧
+　(　･∀･)
+　(　つ┳⊃
+ε (_)へ⌒ヽﾌ
+ (　　(　･ω･)
+ ◎―◎   ⊃  ⊃
+BePhuongSuperSuwi
+From TK4 - CHT
+ㅤㅤ／ ⌒＼____
+　 /・　　 ）　　\
+　/ノへ ノ　　　 /|
+ノ　　  ＼\ |/_/_/*/
+
+#include<bits/stdc++.h>
+#define task "main"
+//#define int long long
+#define endl '\n'
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 2e9
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+using namespace std;
+const int maxn = 2e5 + 5;
+
+int n, m, k, a[maxn], b[maxn];
+vector <int> v[maxn];
+
+namespace giai2{
+    int cnt[102], last[102];
+    bool ss(int x, int y) {
+        return last[x] > last[y];
+    }
+
+    void solve() {
+        long long ans = 0;
+        for (int i = 1; i <= n; i++) {
+            for (int x : v[i]) last[x] = i;
+            vector <int> v;
+            for (int x = 1; x <= m; x++) {
+                if (last[x] != 0)
+                    v.pb(x);
+            }
+            sort(v.begin(), v.end(), [&](const int &x,const int &y){
+                return last[x]>last[y];
+            });
+            long long cost = 0, val = 0;
+            int idx = 0;
+            while(idx < (int)v.size()) {
+                int pos = last[v[idx]];
+                while(idx < (int)v.size() && last[v[idx]] == pos) {
+                    int x = v[idx];
+                    val += a[x];
+                    cost += b[x];
+                    idx++;
+                }
+                if (cost <= k) ans = max(ans, val);
+            }
+        }
+        cout << ans;
+    }
+}
+
+main() {
+    ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    cin >> n >> m >> k;
+    for (int i = 1; i <= m; i++) cin >> a[i];
+    for (int i = 1; i <= m; i++) cin >> b[i];
+    for (int i = 1; i <= n; i++) {
+        int sz; cin >> sz;
+        for (int j = 1; j <= sz; j++) {
+            int x; cin >> x;
+            v[i].pb(x);
+        }
+    }
+    giai2::solve();
+}

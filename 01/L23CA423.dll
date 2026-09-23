@@ -1,0 +1,207 @@
+#include <bits/stdc++.h>
+#define task "SHIP"
+#define int long long
+#define ll long long
+#define ld long double
+#define ii pair<int, int>
+#define fi first
+#define se second
+#define all(x) x.begin(), x.end()
+#define mems(x, y) memset(x, y, sizeof(x));
+using namespace std;
+const int mod = 1e9 + 7, moi = 2e5 + 9;
+const ll INF = 1e18;
+const ld EFS = 1e-12;
+const int dx[] = { 1, -1, 0, 0};
+const int dy[] = { 0, 0, 1, -1};
+
+struct pt {
+
+};
+
+int n, q, l[moi], r[moi], a[moi];
+int h[moi], up[moi][20], lg[moi], rmq[moi][20];
+vector<int> adj[moi];
+ll dp[moi], gmax[moi];
+
+bool getbit(int t, int x) {
+    return t >> x & 1;
+}
+
+void dfs(int u) {
+    for(int v: adj[u]) {
+        if(v == up[u][0]) continue;
+        h[v] = h[u] + 1;
+        up[v][0] = u;
+        rmq[v][0] = a[u];
+
+        for(int j = 1; j <= lg[n]; j ++) {
+            up[v][j] = up[up[v][j - 1]][j - 1];
+            rmq[v][j] = max(rmq[v][j - 1], rmq[up[v][j - 1]][j - 1]);
+        }
+
+        dfs(v);
+    }
+}
+
+int lca(int u, int v) {
+    if(h[u] < h[v]) swap(u, v);
+
+    int k = h[u] - h[v];
+    for(int j = 0; j <= lg[k]; j++) {
+        if(getbit(k, j)) u = up[u][j];
+    }
+
+    if(u == v) return u;
+
+    for(int j = lg[h[u]]; j >= 0; j--) {
+        if(up[u][j] != up[v][j]) {
+            u = up[u][j];
+            v = up[v][j];
+        }
+    }
+
+    return up[u][0];
+}
+
+int mx(int u, int v) {
+    int p = lca(u, v);
+
+    int ans = 0;
+    ans = max(a[u], a[v]);
+
+    int kc = h[u] - h[p];
+
+    for(int j = 0; j <= lg[kc]; j++) {
+        if(getbit(kc, j)) {
+            ans = max(ans, rmq[u][j]);
+            u = up[u][j];
+        }
+    }
+
+    kc = h[v] - h[p];
+    for(int j = 0; j <= lg[kc]; j++) {
+        if(getbit(kc, j)) {
+            ans = max(ans, rmq[v][j]);
+            v = up[v][j];
+        }
+    }
+
+    return ans;
+}
+
+int anc_k(int u, int k) {
+    for(int j = 0; j <= lg[k]; j++) {
+        if(getbit(k, j)) u = up[u][j];
+    }
+
+    return u;
+}
+
+int dist(int u, int v) {
+    int l = lca(u, v);
+
+    return h[u] + h[v] - 2 * h[l];
+}
+
+void pre() {
+    lg[1] = 0;
+    for(int i = 2; i <= n; i++) {
+        lg[i] = lg[i / 2] + 1;
+    }
+}
+
+void Input() {
+    cin >> n;
+    pre();
+
+    for(int i = 1; i <= n; i++) cin >> a[i];
+
+    for(int i = 1; i < n; i++) {
+        int u, v;
+        cin >> u >> v;
+
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    dfs(1);
+
+    cin >> q;
+
+    for(int i = 1; i <= n; i++) {
+        gmax[i] = -INF;
+        dp[i] = 0;
+    }
+
+    gmax[1] = 0;
+
+    for(int i = 1; i <= q; i++) {
+        cin >> l[i] >> r[i];
+
+        if(gmax[l[i]] == -INF) continue;
+
+        dp[i] = gmax[l[i]] + mx(l[i], r[i]);
+
+        //cout << gmax[l[i]] << " " << mx(l[i], r[i]) << " " << l[i] << " " << r[i] << '\n';
+
+        gmax[r[i]] = max(gmax[r[i]], dp[i]);
+    }
+
+    ll ans = -INF;
+
+    for(int i = 1; i <= q; i++) {
+        //cout << dp[i] << '\n';
+        ans = max(ans, dp[i]);
+    }
+
+    cout << ans;
+}
+
+main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    if(fopen(task".inp","r")){
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1;
+    //cin >> t;
+    while (t --) {
+        Input();
+    }
+
+    cerr << "Time: " << (1.0 * clock() / CLOCKS_PER_SEC) << " s.\n";
+}
+
+/*
+7
+1 5 5 7 3 16 1
+1 4
+1 2
+2 3
+4 5
+5 6
+5 7
+7
+1 3
+3 2
+1 4
+4 2
+2 5
+5 7
+5 6
+
+4
+1 2 3 4
+1 2
+2 3
+3 4
+4
+1 3
+1 2
+2 3
+2 4
+*/

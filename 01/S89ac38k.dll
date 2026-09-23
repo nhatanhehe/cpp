@@ -1,0 +1,97 @@
+
+#include<bits/stdc++.h>
+using namespace std;
+typedef long double ld;
+#define pb push_back
+#define pf push_front
+#define ii pair<int,int>
+#define iii pair<int,pair<int,int>>
+#define all(x) x.begin(),x.end()
+#define fi first
+#define se second
+const int inf=1e18;
+const int N=5e5+5;
+const int mod=1e9+7;
+const int base=311;
+#define On(mask,i) (mask|(1LL<<i))
+#define Off(mask,i) (mask^(1LL<<i))
+inline int mul(int a,int b){
+    return (a%mod)*(b%mod)%mod;
+}
+inline int sub(int a,int b){
+    return ((a-b)%mod+mod)%mod;
+}
+inline int add(int a,int b){
+    return (a%mod+b%mod)%mod;
+}
+int n,col[N],heavy[N],vert[N],u,v,res[N],ans[N],par[N];
+vector<int>g[N];
+int st[N],en[N];
+int cnt,mx,m[N];
+int dfs(int u,int p){
+    st[u]=++cnt;
+    vert[cnt]=u;
+    int child_sz=0,mx=0,sz=0;
+    for(int v:g[u]){
+        if(v!=p){
+            child_sz=dfs(v,u);
+            if(mx<child_sz){
+                mx=child_sz;
+                heavy[u]=v;
+            }
+            sz+=child_sz;
+        }
+    }
+    en[u]=cnt;
+    return sz;
+}
+inline void add(int u){
+    res[m[col[u]]]-=col[u];
+    m[col[u]]++;
+    res[m[col[u]]]+=col[u];
+    if(mx<m[col[u]]){
+        mx=m[col[u]];
+    }
+}
+inline void del(int u){
+    res[m[col[u]]]-=col[u];
+    m[col[u]]--;
+    res[m[col[u]]]+=col[u];
+    if(!res[mx]) mx--;
+}
+void hld(int u,int p,bool keep){
+    for(int v:g[u]){
+        if(v!=p&&v!=heavy[u]) hld(v,u,0);
+    }
+    if(heavy[u]) hld(heavy[u],u,1);
+    for(int v:g[u]){
+        if(v!=p&&v!=heavy[u]){
+            for(int i=st[v];i<=en[v];i++){
+                add(vert[i]);
+            }
+        }
+    }
+    add(u);
+    ans[u]=res[mx];
+    if(!keep){
+        for(int i=st[u];i<=en[u];i++){
+            del(vert[i]);
+        }
+    }
+}
+main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);cout.tie(NULL);
+    cin>>n;
+    for(int i=1;i<=n;i++){
+        cin>>col[i];
+    }
+    for(int i=1;i<n;i++){
+        cin>>u>>v;
+        g[u].pb(v);
+        g[v].pb(u);
+    }
+    dfs(1,-1);
+    hld(1,-1,0);
+    for(int i=1;i<=n;i++) cout<<ans[i]<<" ";
+}

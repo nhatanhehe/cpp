@@ -1,0 +1,168 @@
+/*
+1 l r d:b[i]=min(a[i],b[i]+d).
+2 l r : sum(b[i])
+*/
+#include <bits/stdc++.h>
+using namespace std;
+#define task "srain"
+#define int long long
+#define ll long long
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define fi first
+#define se second
+#define vi vector<int>
+#define vii vector<ii>
+#define pb push_back
+
+const int N=2e5+9;
+const int inf=1e18;
+int n,a[N],b[N],q;
+struct Node{
+    //sửa tham số seg merge ở đây
+    int cnt=0;
+    int sum=0;
+    int min_r=inf;
+    int lazy=0;
+    bool operator==(const Node& other) const {
+        return  (cnt==other.cnt && min_r==other.min_r && sum == other.sum && lazy==other.lazy);
+    }
+};
+Node oo={0,0,0,0};
+template <typename T>
+struct SegmentTree {
+    int n;
+    vector<T> tree;
+    T neutral;
+
+    //sửa combine ở đây
+    T Merge(const T& a, const T& b) {
+        T res;
+        res.sum=a.sum+b.sum;
+        res.cnt=a.cnt+b.cnt;
+        res.min_r=min(a.min_r,b.min_r);
+        return res;
+    }
+
+    SegmentTree(int _n, T _neutral) {
+        n = _n;
+        neutral = _neutral;
+        tree.assign(4 * n + 9, neutral);
+    }
+
+    void build(int i, int u, int v) {
+        if (u == v) {
+            //sửa đoạn build ở đây .
+            if(a[u]>b[u]){
+                tree[i].sum=b[u];
+                tree[i].cnt=1;
+                tree[i].min_r=(a[u]-b[u]);
+            }
+            else{
+                tree[i].sum=a[u];
+                tree[i].cnt=0;
+                tree[i].min_r=inf;
+            }
+        } else {
+            int mid = (u + v) / 2;
+            build(2 * i, u, mid);
+            build(2 * i + 1, mid + 1, v);
+            tree[i] = Merge(tree[2 * i], tree[2 * i + 1]);
+        }
+    }
+    void apply_node(int i,int d){
+        tree[i].sum+=tree[i].cnt*d;
+        tree[i].min_r-=d;
+        tree[i].lazy+=d;
+    }
+    void push(int i){
+        int val=tree[i].lazy;
+        if(val==0) return;
+
+        if(tree[i*2].cnt>0){
+            apply_node(i*2,val);
+        }
+        if(tree[i*2+1].cnt>0){
+            apply_node(i*2+1,val);
+        }
+        tree[i].lazy=0;
+        return;
+    }
+    void update(int i,int l,int r,int u,int v,int val){
+        if(l>v || r<u || tree[i].cnt==0) return;
+
+        if(l<=u && v<=r && tree[i].min_r>=val){
+            apply_node(i,val);
+            return;
+        }
+        if(v==u){
+            tree[i].sum=a[u];
+            tree[i].cnt=0;
+            tree[i].min_r=inf;
+            return;
+        }
+        push(i);
+        update(i*2,l,r,u,(u+v)/2,val);
+        update(i*2+1,l,r,(u+v)/2+1,v,val);
+
+        tree[i]=Merge(tree[i*2],tree[i*2+1]);
+    }
+    int query(int i, int u, int v, int l, int r) {
+        if (r < u || v < l) {
+            return 0;
+        }
+        if (l <= u && v <= r) {
+            return tree[i].sum;
+        }
+
+        push(i);
+        int mid = (u + v) / 2;
+        int p1 = query(2 * i, u, mid, l, r);
+        int p2 = query(2 * i + 1, mid + 1, v, l, r);
+
+
+        return (p1 + p2);
+    }
+
+    void update(int l,int r,int val) {
+        update(1,l,r, 1, n, val);
+    }
+
+    int get(int l, int r) {
+        return query(1, 1, n, l, r);
+    }
+};
+
+signed main(){
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);cout.tie(0);
+
+//    freopen(task".inp","r",stdin);
+//    freopen(task".out","w",stdout);
+
+    cin>>n>>q;
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+    }
+    for(int i=1;i<=n;i++){
+        cin>>b[i];
+    }
+
+    SegmentTree<Node> st(n,oo);
+    st.build(1,1,n);
+    for(int i=1;i<=q;i++){
+        int ty;
+        cin>>ty;
+        if(ty==1){
+            int l,r,d;
+            cin>>l>>r>>d;
+            st.update(l,r,d);
+        }
+        else{
+            int l,r;
+            cin>>l>>r;
+            cout<<st.get(l,r)<<"\n";
+        }
+    }
+}
+

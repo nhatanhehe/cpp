@@ -1,0 +1,107 @@
+/*
+ * PROBLEM: ĐIỀU CHỈNH CƯỜNG ĐỘ (ISASIGNAL)
+ * TÓM TẮT GIẢI THUẬT:
+ * 1. Tính dist[i] là khoảng cách tích lũy từ trạm 1 đến trạm i dựa trên d[i].
+ * 2. Dùng 2 vòng lặp (xuôi/ngược) để tìm khoảng [L[i], R[i]] hợp lệ ban đầu cho mỗi trạm.
+ * 3. Với mỗi trạm p[j] trong thứ tự ưu tiên:
+ * - Dùng Segment Tree để tìm giới hạn chặt nhất từ các trạm đã đặt trước đó.
+ * - Nếu x[j]=1 chọn min, x[j]=0 chọn max.
+ * - Cập nhật giá trị vừa chọn vào Segment Tree để ràng buộc các bước sau.
+ * ĐỘ PHỨC TẠP: O(T * N log N)
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+typedef long long ll;
+const ll INF = 4e18; // Đủ lớn cho 10^15 + 3e5 * 10^9
+
+struct Node {
+    ll max_p, max_m, min_p, min_m;
+};
+
+int n;
+ll b[300005], d[300005], dist[300005];
+ll L[300005], R[300005], res[300005];
+int p[300005], x[300005];
+Node tree[1200005];
+
+void update(int node, int start, int end, int idx, ll val) {
+    if (start == end) {
+        tree[node] = {val + dist[idx], val - dist[idx], val + dist[idx], val - dist[idx]};
+        return;
+    }
+    int mid = (start + end) / 2;
+    if (idx <= mid) update(2 * node, start, mid, idx, val);
+    else update(2 * node + 1, mid + 1, end, idx, val);
+    
+    tree[node].max_p = max(tree[2 * node].max_p, tree[2 * node + 1].max_p);
+    tree[node].max_m = max(tree[2 * node].max_m, tree[2 * node + 1].max_m);
+    tree[node].min_p = min(tree[2 * node].min_p, tree[2 * node + 1].min_p);
+    tree[node].min_m = min(tree[2 * node].min_m, tree[2 * node + 1].min_m);
+}
+
+Node query(int node, int start, int end, int l, int r) {
+    if (r < start || end < l) return {-INF, -INF, INF, INF};
+    if (l <= start && end <= r) return tree[node];
+    int mid = (start + end) / 2;
+    Node n1 = query(2 * node, start, mid, l, r);
+    Node n2 = query(2 * node + 1, mid + 1, end, l, r);
+    return {max(n1.max_p, n2.max_p), max(n1.max_m, n2.max_m), 
+            min(n1.min_p, n2.min_p), min(n1.min_m, n2.min_m)};
+}
+
+void solve() {
+    cin >> n;
+    for (int i = 1; i <= n; i++) cin >> b[i];
+    dist[1] = 0;
+    for (int i = 1; i < n; i++) {
+        cin >> d[i];
+        dist[i + 1] = dist[i] + d[i];
+    }
+    for (int i = 1; i <= n; i++) cin >> p[i];
+    for (int i = 1; i <= n; i++) cin >> x[i];
+
+    // Khởi tạo L, R ban đầu
+    for (int i = 1; i <= n; i++) { L[i] = 1; R[i] = b[i]; }
+    for (int i = 2; i <= n; i++) {
+        R[i] = min(R[i], R[i - 1] + d[i - 1]);
+        L[i] = max(L[i], L[i - 1] - d[i - 1]);
+    }
+    for (int i = n - 1; i >= 1; i--) {
+        R[i] = min(R[i], R[i + 1] + d[i]);
+        L[i] = max(L[i], L[i + 1] - d[i]);
+    }
+
+    // Reset Segment Tree
+    for (int i = 0; i <= 4 * n; i++) tree[i] = {-INF, -INF, INF, INF};
+
+    for (int j = 1; j <= n; j++) {
+        int idx = p[j];
+        Node left_fixed = query(1, 1, n, 1, idx - 1);
+        Node right_fixed = query(1, 1, n, idx + 1, n);
+
+        ll curL = L[idx];
+        curL = max({curL, left_fixed.max_p - dist[idx], right_fixed.max_m + dist[idx]});
+
+        ll curR = R[idx];
+        curR = min({curR, left_fixed.min_m + dist[idx], right_fixed.min_p - dist[idx]});
+
+        res[idx] = (x[j] == 1) ? curL : curR;
+        update(1, 1, n, idx, res[idx]);
+    }
+
+    for (int i = 1; i <= n; i++) cout << res[i] << (i == n ? "" : " ");
+    cout << "\n";
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    int t; cin >> t;
+    while (t--) solve();
+    return 0;
+}

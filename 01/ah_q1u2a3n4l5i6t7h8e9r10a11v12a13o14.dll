@@ -1,0 +1,117 @@
+/*
+================================================================================
+TÓM TẮT ĐỀ BÀI:
+- Có n nhân viên, ban đầu không ai có thẻ. Có 3 loại sự kiện:
+  1. '+ a b': Một thẻ mới được cấp cho a hoặc b. Nếu a=b, a chắc chắn có thẻ.
+     Thẻ chỉ cấp cho người chưa có thẻ.
+  2. '- c': Nhân viên c làm mất thẻ (trả lại thẻ).
+  3. '? d': Kiểm tra trạng thái của d: Chắc chắn có (1), chắc chắn không (0), hoặc không xác định (?).
+
+GIẢI THUẬT (DSU - Disjoint Set Union):
+1. Sử dụng DSU để quản lý các nhóm nhân viên có liên kết với nhau qua việc cấp thẻ.
+2. Mỗi tập hợp (component) trong DSU lưu trữ:
+   - sz[x]: Số lượng nhân viên trong nhóm.
+   - type[x]: Trạng thái của nhóm:
+     + type = 0: Chắc chắn không ai có thẻ.
+     + type = 1: Trạng thái không xác định (?).
+     + type = 2: Chắc chắn có thẻ (1).
+3. Xử lý các sự kiện:
+   - '+ a b':
+     + Nếu a và b thuộc cùng một nhóm: Tạo thành một "chu trình" liên kết thẻ,
+       nhóm đó chuyển sang trạng thái chắc chắn có thẻ (type = 2).
+     + Nếu khác nhóm: Gộp nhóm. Nếu một trong hai nhóm đã chắc chắn có thẻ, nhóm mới cũng vậy.
+   - '- c': Sử dụng kỹ thuật "xóa" đỉnh trong DSU bằng cách gán cho nhân viên c một ID mới
+     (id[c] = ++cnt). Giảm kích thước nhóm cũ. Nếu nhóm cũ chỉ còn 1 người và đang ở
+     trạng thái undetermined (1), người đó sẽ chuyển về trạng thái không có thẻ (0).
+   - '? d': Truy cập gốc của id[d] để lấy trạng thái type tương ứng.
+================================================================================
+*/
+
+#include<bits/stdc++.h>
+#define task "main"
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+#define endl '\n'
+#define int long long
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 1e18
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+#define ordered_set tree<int, null_type,less<int>, rb_tree_tag,tree_order_statistics_node_update>
+#define __lcm(a,b) (1ll * ((a) / __gcd((a), (b))) * (b))
+using namespace std;
+//using namespace __gnu_pbds;
+const int maxn = 1e6 + 5;
+
+int n, q, cnt, type[maxn], id[maxn], par[maxn], sz[maxn];
+
+int acs(int u) {
+    if (par[u] == u) return u;
+    else return par[u] = acs(par[u]);
+}
+
+void join(int u, int v) {
+    int x = acs(u);
+    int y = acs(v);
+    if (x != y) {
+        sz[y] += sz[x];
+        par[x] = y;
+
+        if (type[x] == 2 || type[y] == 2) type[y] = 2;
+        else type[y] = 1;
+    }
+    else type[y] = 2; // Nếu gộp hai đỉnh đã cùng thành phần -> tạo chu trình -> chắc chắn có thẻ
+}
+
+main() {
+    ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    cin >> n >> q;
+
+    for (int i = 1; i <= n; i++) {
+        id[i] = par[i] = i;
+        sz[i] = 1;
+        type[i] = 0;
+    }
+    cnt = n;
+
+    while(q--) {
+        char ty; cin >> ty;
+        if (ty == '?') {
+            int x; cin >> x;
+            int val = type[acs(id[x])];
+
+            if (val == 0) cout << "0";
+            else if (val == 1) cout << "?";
+            else if (val == 2) cout << "1";
+        }
+        else if (ty == '+') {
+            int l, r; cin >> l >> r;
+            join(id[l], id[r]);
+        }
+        else {
+            int c; cin >> c;
+            int x = acs(id[c]);
+            sz[x]--;
+            // Nếu nhóm cũ chỉ còn 1 người, người đó chắc chắn không có thẻ
+            if (sz[x] == 1 && type[x] == 1) type[x] = 0;
+
+            // Kỹ thuật tách nốt: tạo ID mới cho nhân viên c
+            id[c] = ++cnt;
+            par[cnt] = cnt;
+            sz[cnt] = 1;
+            type[cnt] = 0;
+        }
+    }
+}

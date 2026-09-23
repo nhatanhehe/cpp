@@ -1,0 +1,89 @@
+struct MergeSortTree {
+    int n;
+    vector<vector<int>> tree;
+    vector<vector<long long>> pref;
+
+    MergeSortTree(int _n = 0) {
+        init(_n);
+    }
+
+    void init(int _n) {
+        n = _n;
+        tree.assign(4 * n + 5, {});
+        pref.assign(4 * n + 5, {});
+    }
+
+    void build(const vector<int> &a, int id, int l, int r) {
+        if (l == r) {
+            tree[id].push_back(a[l]);
+            pref[id].push_back(a[l]);
+            return;
+        }
+        int mid = (l + r) >> 1;
+        build(a, id << 1, l, mid);
+        build(a, id << 1 | 1, mid + 1, r);
+
+        auto &L = tree[id << 1];
+        auto &R = tree[id << 1 | 1];
+        tree[id].resize(L.size() + R.size());
+        merge(L.begin(), L.end(), R.begin(), R.end(), tree[id].begin());
+
+        pref[id].resize(tree[id].size());
+        pref[id][0] = tree[id][0];
+        for (int i = 1; i < (int)tree[id].size(); i++)
+            pref[id][i] = pref[id][i - 1] + tree[id][i];
+    }
+
+    void build(const vector<int> &a) {
+        build(a, 1, 1, n);
+    }
+
+    int count_le(int u, int v, int k, int id, int l, int r) {
+        if (r < u || l > v) return 0;
+        if (u <= l && r <= v) {
+            return upper_bound(tree[id].begin(), tree[id].end(), k) - tree[id].begin();
+        }
+        int mid = (l + r) >> 1;
+        return count_le(u, v, k, id << 1, l, mid)
+             + count_le(u, v, k, id << 1 | 1, mid + 1, r);
+    }
+
+    int count_le(int u, int v, int k) {
+        return count_le(u, v, k, 1, 1, n);
+    }
+
+    // đếm số phần tử >= k
+    int count_ge(int u, int v, int k) {
+        return (v - u + 1) - count_le(u, v, k - 1);
+    }
+
+    // tổng các phần tử <= k
+    long long sum_le(int u, int v, int k, int id, int l, int r) {
+        if (r < u || l > v) return 0;
+        if (u <= l && r <= v) {
+            int pos = upper_bound(tree[id].begin(), tree[id].end(), k) - tree[id].begin();
+            if (pos == 0) return 0;
+            return pref[id][pos - 1];
+        }
+        int mid = (l + r) >> 1;
+        return sum_le(u, v, k, id << 1, l, mid)
+             + sum_le(u, v, k, id << 1 | 1, mid + 1, r);
+    }
+
+    long long sum_le(int u, int v, int k) {
+        return sum_le(u, v, k, 1, 1, n);
+    }
+
+    int kth(int u, int v, int k, int lo, int hi) {
+        int l = lo, r = hi, ans = hi;
+        while (l <= r) {
+            int mid = (l + r) >> 1;
+            if (count_le(u, v, mid) >= k) {
+                ans = mid;
+                r = mid - 1;
+            } else l = mid + 1;
+        }
+        return ans;
+    }
+};
+

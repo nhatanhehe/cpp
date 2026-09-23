@@ -1,0 +1,1 @@
+{"name":"Local: rseq","url":"e:\\cpp\\rseq.cpp","tests":[{"id":1789546779742,"input":"6 2\n7 10 2 0 0 7\n2 6","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\rseq.cpp","group":"local","local":true}

@@ -1,0 +1,1 @@
+{"name":"Local: ioibin","url":"e:\\cpp\\ioibin.cpp","tests":[{"id":1776845720609,"input":"9\n1 2 2\n1 2 1\n3 7 2\n2 3 1\n1 3 2\n2 4 2\n1 4 1\n3 4 2\n1 7 2\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\ioibin.cpp","group":"local","local":true}

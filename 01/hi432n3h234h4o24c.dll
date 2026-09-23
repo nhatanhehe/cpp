@@ -1,0 +1,122 @@
+#define double long double
+struct Point
+{
+    double x, y;
+    Point() {};
+    Point(double _x, double _y) : x(_x), y(_y) {};
+    Point &operator+=(const Point &t)
+    {
+        x += t.x;
+        y += t.y;
+        return *this;
+    }
+    Point &operator-=(const Point &t)
+    {
+        x -= t.x;
+        y -= t.y;
+        return *this;
+    }
+    Point &operator*=(double t)
+    {
+        x *= t;
+        y *= t;
+        return *this;
+    }
+    Point &operator/=(double t)
+    {
+        x /= t;
+        y /= t;
+        return *this;
+    }
+    Point operator+(const Point &t) const
+    {
+        return Point(*this) += t;
+    }
+    Point operator-(const Point &t) const
+    {
+        return Point(*this) -= t;
+    }
+    Point operator*(double t) const
+    {
+        return Point(*this) *= t;
+    }
+    Point operator/(double t) const
+    {
+        return Point(*this) /= t;
+    }
+};
+// Note: đường thẳng
+struct line2d
+{
+    double a, b, c;
+    line2d() {};
+    line2d(double _a, double _b, double _c) : a(_a), b(_b), c(_c) {};
+    line2d(Point &u, Point &v) : a(u.y - v.y), b(v.x - u.x), c(u.x * v.y - v.x * u.y) {};
+};
+// Note: đường thẳng tạo bởi điểm và vector
+
+// Note: tích vô hướng
+double dot(const Point &a, const Point &b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+// Note: tích có hướng
+double cross(Point a, Point b)
+{
+    return a.x * b.y - a.y * b.x;
+}
+// Note: tính độ dài của vector
+double abs(const Point &a)
+{
+    return sqrt(a.x * a.x + a.y * a.y);
+}
+// Note: tính góc tạo bởi 2 vector
+double angle(const Point &a, const Point &b)
+{
+    return acos(dot(a, b) / abs(a) / abs(b));
+}
+// Note: diện tích tam giác
+double triangle_area(const Point &a, const Point &b, const Point &c)
+{
+    auto v = a - b;
+    auto u = c - b;
+    return abs(cross(v, u)) / 2.0;
+}
+// Note: check điểm có nằm trên đường thẳng hay không
+bool check(Point &lmao, line2d &bruh)
+{
+    if (lmao.x * bruh.a + lmao.y * bruh.b + bruh.c == 0) return true;
+    else return false;
+}
+// Note: Tìm trung điểm tạo bởi 2 point
+Point get_midpoint(Point &a, Point &b)
+{
+    Point res((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+    return res;
+}
+// Note: tìm đường phân giác
+line2d get_bisector(Point &a, Point &b, Point &c)
+{
+    Point ab = b - a;
+    double len_ab = abs(ab);
+    Point ac = c - a;
+    double len_ac = abs(ac);
+    double v = len_ab / len_ac;
+    Point e(v * (c.x - a.x) + a.x, v * (c.y - a.y) + a.y);
+    Point mid = get_midpoint(b, e);
+    return line2d(a, mid);
+}
+// Note: Khoảng cách từ 1 điểm đến một đường thẳng
+double length_point_to_line(Point &a, line2d &b)
+{
+    double res;
+    res = abs(b.a * a.x + b.b * a.y + b.c) / sqrt(b.a * b.a + b.b * b.b);
+    return res;
+}
+// Note: kiểm tra điểm C nằm phía bên nào đoạn AB
+int ccw(Point a, Point b, Point c) {
+    double val = cross(b - a, c - a);
+    if (val > 0) return 1;  //left
+    if (val == 0) return 0; //trùng nhau
+    else return -1;         //right
+}

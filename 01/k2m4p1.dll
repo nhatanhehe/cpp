@@ -1,0 +1,23 @@
+automaton:
+void prekmp() {
+	for (int i = 2; i <= n3; i++) {
+    	int j = p[i - 1];
+    	while(j > 0 && s3[j + 1] != s3[i])
+    		j = p[j];
+    	if (s3[j + 1] == s3[i])
+    		p[i] = j + 1;
+    	else
+    		p[i] = 0;
+    }
+    // Next[k][c]: nếu thêm kí tự c vào cuối xâu thì prefix dài nhất là bao nhiêu.
+
+    for (int k = 0; k <= n3; k++) {
+		for (int c = 0; c < 26; c++) {
+			if (k < n3 && s3[k + 1] == c + 'a')
+				Next[k][c] = k + 1;
+			else
+				Next[k][c] = Next[p[k]][c];
+		}
+	}
+}
+

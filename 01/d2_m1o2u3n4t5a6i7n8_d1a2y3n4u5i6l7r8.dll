@@ -1,0 +1,120 @@
+/*
+ * TÓM TẮT BÀI TOÁN:
+ * - Cho dãy a, với mỗi truy vấn [l, r], cần biến đoạn này thành dãy "núi" (tăng rồi giảm) 
+ * bằng cách chỉ thêm khối (không được bớt). Tìm số khối tối thiểu.
+ * * TÓM TẮT SOLUTION:
+ * 1. Đỉnh núi tối ưu nhất (p) sẽ là vị trí của phần tử lớn nhất trong đoạn [l, r].
+ * Sử dụng Sparse Table để tìm RMQ (vị trí max) trong O(1).
+ * 2. Khi đã có đỉnh p, đoạn [l, p] phải trở thành dãy không giảm, đoạn [p, r] không tăng.
+ * - Chiều cao mới tại i thuộc [l, p] sẽ là max(a[l...i]).
+ * - Chiều cao mới tại i thuộc [p, r] sẽ là max(a[i...r]).
+ * 3. Để tính nhanh tổng chiều cao mới trong O(log N), ta dùng Binary Lifting:
+ * - Xây dựng cây dựa trên "Phần tử lớn hơn gần nhất" (Nearest Greater Element).
+ * - fL[i], fR[i] lưu tổng tích lũy của các prefix/suffix max từ gốc đến i.
+ * - Dùng nhảy nhị phân để tìm điểm dừng trong đoạn truy vấn.
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <stack>
+
+using namespace std;
+
+typedef long long ll;
+
+const int MAXN = 100005;
+const int LOGN = 18;
+
+int n, q;
+ll a[MAXN], pref[MAXN];
+int st[MAXN][LOGN], lg2[MAXN];
+int L[MAXN], R[MAXN];
+int upL[MAXN][LOGN], upR[MAXN][LOGN];
+ll fL[MAXN], fR[MAXN];
+
+// Tìm vị trí của giá trị lớn nhất trong [l, r]
+int get_max_idx(int l, int r) {
+    int k = lg2[r - l + 1];
+    if (a[st[l][k]] >= a[st[r - (1 << k) + 1][k]])
+        return st[l][k];
+    return st[r - (1 << k) + 1][k];
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    if (!(cin >> n >> q)) return 0;
+
+    for (int i = 1; i <= n; i++) {
+        cin >> a[i];
+        pref[i] = pref[i - 1] + a[i];
+        st[i][0] = i;
+    }
+
+    // Tiền xử lý Sparse Table & Log2
+    lg2[1] = 0;
+    for (int i = 2; i <= n; i++) lg2[i] = lg2[i / 2] + 1;
+    for (int j = 1; j < LOGN; j++) {
+        for (int i = 1; i + (1 << j) - 1 <= n; i++) {
+            int left = st[i][j - 1];
+            int right = st[i + (1 << (j - 1))][j - 1];
+            st[i][j] = (a[left] >= a[right]) ? left : right;
+        }
+    }
+
+    // Monotonic Stack tìm Nearest Greater Element
+    stack<int> s;
+    for (int i = 1; i <= n; i++) {
+        while (!s.empty() && a[s.top()] <= a[i]) s.pop();
+        L[i] = s.empty() ? 0 : s.top();
+        s.push(i);
+    }
+    while (!s.empty()) s.pop();
+    for (int i = n; i >= 1; i--) {
+        while (!s.empty() && a[s.top()] <= a[i]) s.pop();
+        R[i] = s.empty() ? n + 1 : s.top();
+        s.push(i);
+    }
+
+    // Xây dựng Binary Lifting cho Prefix/Suffix Max Sum
+    for (int i = 1; i <= n; i++) {
+        fL[i] = fL[L[i]] + a[i] * (i - L[i]);
+        upL[i][0] = L[i];
+        for (int j = 1; j < LOGN; j++) upL[i][j] = upL[upL[i][j - 1]][j - 1];
+    }
+    for (int i = n; i >= 1; i--) {
+        fR[i] = fR[R[i]] + a[i] * (R[i] - i);
+        upR[i][0] = (R[i] > n) ? 0 : R[i];
+        for (int j = 1; j < LOGN; j++) upR[i][j] = upR[upR[i][j - 1]][j - 1];
+    }
+
+    while (q--) {
+        int l, r;
+        cin >> l >> r;
+        int p = get_max_idx(l, r);
+
+        // Tính tổng dãy không giảm [l, p]
+        int currL = l;
+        for (int i = LOGN - 1; i >= 0; i--) {
+            if (upR[currL][i] != 0 && upR[currL][i] <= p) currL = upR[currL][i];
+        }
+        ll sumLeft = (fR[l] - fR[currL]) + a[currL] * (p - currL) + a[p];
+
+        // Tính tổng dãy không tăng [p, r]
+        int currR = r;
+        for (int i = LOGN - 1; i >= 0; i--) {
+            if (upL[currR][i] != 0 && upL[currR][i] >= p) currR = upL[currR][i];
+        }
+        ll sumRight = (fL[r] - fL[currR]) + a[currR] * (currR - p) + a[p];
+
+        // Kết quả = (Tổng mới) - (Tổng cũ)
+        // Lưu ý: a[p] được cộng ở cả 2 bên nên cần trừ bớt 1 lần
+        ll totalNew = sumLeft + sumRight - a[p];
+        ll totalOld = pref[r] - pref[l - 1];
+        cout << totalNew - totalOld << "\n";
+    }
+
+    return 0;
+}

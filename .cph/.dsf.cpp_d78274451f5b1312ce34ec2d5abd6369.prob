@@ -1,0 +1,1 @@
+{"name":"Local: dsf","url":"e:\\cpp\\dsf.cpp","tests":[{"id":1776846248656,"input":"4 4\n1 2\n3 4\n1 3\n2 4","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\dsf.cpp","group":"local","local":true}

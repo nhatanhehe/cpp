@@ -1,0 +1,94 @@
+Sinh đồ thị
+
+
+Cách sinh cây
+
+	int n = Rand(..., ...)
+	vector<int> v;
+        for(int i = 1 ; i <= n ; i++)
+            v.push_back(i);
+
+        for(int i = 1 ; i <= 5 ; i++)
+            random_shuffle(v.begin() , v.end());
+
+
+        for(int i = 0 ; i < v.size() - 1 ; i++)
+            cout << v[i] << " " << v[rand(i + 1 , v.size() - 1)] << endl;
+
+
+Cách sinh liên thông:
+
+-> Sinh cây trước
+-> Sinh m - (n - 1) lại ngẫu nhiên
+
+Cách sinh không trùng
+
+Tạo set < pair < int , int > > edge: chứa các cạnh đã sinh
+
+
+Trong quá trình random cạnh
+1) Nếu cạnh đó đã xuất hiện trong set, thì đi random lại
+2) Nếu cạnh đó chưa thì đưa ra cạnh đó và thêm vào trong set
+#include<bits/stdc++.h>
+using namespace std;
+#define NAME "main"
+const int N = 10;
+
+mt19937 rd(chrono::steady_clock::now().time_since_epoch().count());
+#define rand rd
+
+long long Rand(long long l, long long r){
+    return l + ((rand()*1ll*rand())%(r-l+1) + r-l+1)%(r-l+1);
+}
+
+int par[1005], label[1005], n;
+set<int> U[1005];
+
+void Tree(){
+    n = Rand(2, 100);
+    int m = Rand(n-1, 5*n);
+
+    for (int i = 2; i <= n; i++){
+        par[i] = Rand(1, i-1);
+    }
+    for (int i = 1; i <= n; i++) label[i] = i;
+    shuffle(label+1, label+n+1, default_random_engine(0));
+    int s = Rand(1, n), t = Rand(1, n);
+    while (s != t) t = Rand(1, n);
+
+    for (int i = 2; i <= n; i++){
+        inp << label[par[i]] << ' ' << label[i] <<  endl;
+        U[label[par[i]]].insert(label[i]);
+        U[label[i]].insert(label[par[i]]);
+    }
+}
+
+void Graph(){
+    n = Rand(2, 100);
+    int m = Rand(n-1, 5*n);
+
+    for (int i = 2; i <= n; i++){
+        par[i] = Rand(1, i-1);
+    }
+    for (int i = 1; i <= n; i++) label[i] = i;
+    shuffle(label+1, label+n+1, default_random_engine(0));
+    int s = Rand(1, n), t = Rand(1, n);
+    while (s != t) t = Rand(1, n);
+
+    for (int i = 2; i <= n; i++){
+        inp << label[par[i]] << ' ' << label[i] <<  endl;
+        U[label[par[i]]].insert(label[i]);
+        U[label[i]].insert(label[par[i]]);
+    }
+    while (m != n-1){
+        m--;
+        int u = Rand(1, n), v = Rand(1, n);
+        while (u == v || U[u].count(v)) {
+            u = Rand(1, n);
+            v = Rand(1, n);
+        }
+        inp << u << ' ' << v  << endl;
+        U[u].insert(v);
+        U[v].insert(u);
+    }
+}

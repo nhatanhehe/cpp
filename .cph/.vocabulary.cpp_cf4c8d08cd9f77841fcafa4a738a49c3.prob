@@ -1,0 +1,1 @@
+{"name":"Local: vocabulary","url":"e:\\cpp\\vocabulary.cpp","tests":[{"id":1786452633149,"input":"?heoret?cal\nc?puter\n?science","output":"42562"}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\vocabulary.cpp","group":"local","local":true}

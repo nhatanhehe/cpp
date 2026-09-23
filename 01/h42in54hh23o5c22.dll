@@ -1,0 +1,170 @@
+#include<bits/stdc++.h>
+#define str string
+#define task "area1"
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii,ii>
+#define se second
+#define fi first
+#define ffi fi.fi
+#define sfi se.fi
+#define sse se.se
+#define fse fi.se
+#define lt(i, c, d) for(int i = c; i <= d; ++i)
+#define fl(i, c, d) for(int i = d; i >= c; --i)
+#define pb push_back//khi dùng pair
+#define emb emplace_back//k pair
+using namespace std;
+const int N=1e6+5,lg=20,mod=1e9+7;
+int n;
+struct point2d
+{
+    long double x,y;
+    point2d (){}
+    point2d(long double x,long double y):x(x),y(y){}
+    point2d operator +(point2d t){
+        return point2d(x+t.x,y+t.y);
+    }
+    point2d operator-(point2d t){
+        return point2d(x-t.x,y-t.y);
+    }
+    friend bool operator<(point2d x,point2d y){
+        return x.x<y.x||(x.x==y.x&&x.y<y.y);
+    }
+    point2d operator*(long double k) const{return point2d(x*k,y*k);}
+    point2d operator/(long double k) const{return point2d(x/k,y/k);}
+};
+struct line2d{
+      long double a,b,c;
+      line2d (){}
+      line2d (long double a,long double b,long double c):a(a),b(b),c(c){}
+      line2d(point2d &u,point2d &v):a(u.y-v.y),b(v.x-u.x),c(u.x*v.y-v.x*u.y){};
+};
+//3 đ thang hang
+long double ccw(point2d a,point2d b,point2d c){
+    point2d x={b.x-a.x,b.y-a.y};
+    point2d y={c.x-b.x,c.y-b.y};
+    return x.y*y.x-x.x*y.y;
+}
+//pt dg thg
+line2d line(point2d a,point2d b){
+    line2d t;
+    t.a=a.y-b.y;
+    t.b=b.x-a.x;
+    t.c=a.x*b.y-a.y*b.x;
+    return t;
+}
+//tich co huong
+long double cross(point2d a,point2d b){
+    return a.x*b.y-a.y*b.x;
+}
+//tich vo huong
+long double dot(point2d a,point2d b){
+    return a.x*b.x+a.y*b.y;
+}
+//do dai
+long double len(point2d a,point2d b){
+  return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+}
+//goc giua 2 vector
+long double angle(point2d a,point2d b){
+    return acos(dot(a,b)/len({0,0},a)/len({0,0},b));
+}
+//giao diem 2 dg thang
+point2d get(line2d d1,line2d d2){
+    point2d res;
+    long double mau=(d1.a*d2.b-d2.a*d1.b);
+   res.x=(d2.c*d1.b-d1.c*d2.b)/mau;
+   res.y=(d2.a*d1.c-d1.a*d2.c);
+  return res;
+}
+//kc 1 diem den 1 dg thang
+long double dis(point2d p,line2d d){
+    return abs((d.a*p.x+d.b*p.y+d.c)/sqrt(d.a*d.a+d.b*d.b));
+}
+long double fcw(point2d x,point2d y){
+    return x.x*y.x+x.y*y.y;
+}
+long double triangle( point2d a,  point2d b,point2d c){ // dt tam giac
+    point2d v = a - b;
+    point2d u = c - b;
+    return abs(cross(v, u)) / 2;
+}
+point2d a[N];
+vector<point2d> convex(int n){
+    vector<point2d>h;
+    sort(a+1,a+1+n);
+    h.emb(a[1]);
+    for(int i=2;i<=n;++i){
+        while(h.size()>1&&ccw(h[h.size()-2],h.back(),a[i])<0)h.pop_back();
+        h.pb(a[i]);
+    }
+
+    vector<point2d>h1;
+
+    for(int i=n-1;i>=1;--i){
+        while(h1.size()>1&&ccw(h1[h1.size()-2],h1.back(),a[i])<0)h1.pop_back();
+        h1.pb(a[i]);
+    }
+    if(n>1)
+    h1.pop_back();
+    for(point2d i:h1)h.emb(i);
+    return h;
+}
+//dientich dagiac
+double dt(vector<point2d> v){
+    double res=0;
+    for(int i=0;i<v.size()-1;i++){
+        res+=cross(v[i],v[(i + 1)%v.size()]);
+    }
+    return abs(res)/2;
+}
+//dgtrong qua 3 diem
+line2d perpend(point2d a,point2d b){
+   point2d M=(a+b)/2;
+   line2d d=line(a,b);
+   long double D=-d.b*M.x+d.a*M.y;
+   return line2d(-d.b,d.a,D);
+}
+//doixung
+point2d inter(line2d d1,line2d d2){
+  long double det=d1.a*d2.b-d2.a*d1.b;
+  return point2d((d2.b * d1.c - d1.b * d2.c) / det, (d1.a * d2.c - d2.a * d1.c) / det);
+}
+point2d sym(point2d X,line2d d){
+double D = -d.b * X.x + d.a * X.y;
+    line2d d2 = line2d(-d.b, d.a, D);
+    point2d Y = inter(d, d2);
+    point2d X2 = point2d(2 * Y.x - X.x, 2 * Y.y - X.y);
+    return X2;
+}
+//xoay
+point2d Rotations(point2d A, point2d C,long double rad) {
+    point2d A2 = A - C;
+    point2d B2 = point2d(A2.x * cos(rad) - A2.y * sin(rad), A2.x * sin(rad) + A2.y * cos(rad));
+    point2d B = B2 + C;
+    return B;
+}
+void solve(){
+    cin >> n;
+    for(int i=1;i<=n;++i)cin >> a[i].x >> a[i].y;
+    vector<point2d>res=convex(n);
+    for(point2d i:res)cout <<i.x<<" "<<i.y<<'\n';
+}
+main()
+{
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+    if(fopen(task".inp","r")){
+      freopen(task".inp","r",stdin);
+      freopen(task".out","w",stdout);
+    }
+    int t=1;
+ //   cin >> t;
+while(t--){
+    solve();
+    cout<<'\n';
+}
+
+}

@@ -1,0 +1,87 @@
+/**
+ * TÓM TẮT ĐỀ BÀI:
+ * - Cho dãy A gồm N số nguyên K-bit.
+ * - Đoạn [L, R] nguy hiểm nếu tồn tại M (L <= M < R) sao cho:
+ * + OR(L, M) = 2^K - 1 (tất cả K bit đều là 1)
+ * + AND(M+1, R) = 0 (tất cả K bit đều là 0)
+ * - Yêu cầu: Đếm số lượng đoạn [L, R] nguy hiểm.
+ * * GIẢI PHÁP:
+ * 1. Với mỗi L, ta tìm M nhỏ nhất (gọi là M_start) sao cho OR(L, M) đủ K bit 1.
+ * M_start[L] = max(vị trí bit 1 gần nhất của bit thứ b) với mọi b từ 0..K-1.
+ * 2. Với mỗi điểm bắt đầu M+1, ta tìm R nhỏ nhất (gọi là R_min) sao cho AND(M+1, R) = 0.
+ * R_min[i] = max(vị trí bit 0 gần nhất của bit thứ b) với mọi b từ 0..K-1.
+ * 3. Vì tính đơn điệu: Nếu [L, R] thỏa mãn với M_start, thì mọi R' > R cũng thỏa mãn.
+ * Với mỗi L, ta xác định M = M_start[L]. Nếu M hợp lệ, tìm R = R_min[M+1].
+ * Số lượng R thỏa mãn là (N - R).
+ * 4. Độ phức tạp: O(N * K), không gian O(N).
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+typedef unsigned long long ull;
+
+int main() {
+    // Tối ưu tốc độ nhập xuất
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int N, K;
+    if (!(cin >> N >> K)) return 0;
+
+    vector<ull> A(N);
+    for (int i = 0; i < N; ++i) {
+        cin >> A[i];
+    }
+
+    // next_one[b] lưu vị trí xuất hiện bit 1 gần nhất của bit b khi duyệt ngược
+    // next_zero[b] lưu vị trí xuất hiện bit 0 gần nhất của bit b khi duyệt ngược
+    vector<int> next_one(K, N);
+    vector<int> next_zero(K, N);
+    
+    vector<int> M_start(N, N);
+    vector<int> R_min(N, N);
+
+    // Tiền xử lý bằng cách duyệt ngược từ cuối dãy
+    for (int i = N - 1; i >= 0; --i) {
+        int max_one = 0;
+        int max_zero = 0;
+        for (int b = 0; b < K; ++b) {
+            if ((A[i] >> b) & 1) {
+                next_one[b] = i;
+            } else {
+                next_zero[b] = i;
+            }
+            
+            // Cập nhật vị trí xa nhất cần thiết để đạt đủ điều kiện
+            if (max_one < next_one[b]) max_one = next_one[b];
+            if (max_zero < next_zero[b]) max_zero = next_zero[b];
+        }
+        M_start[i] = max_one;
+        R_min[i] = max_zero;
+    }
+
+    long long dangerous_count = 0;
+
+    // Duyệt qua từng điểm L khả thi
+    for (int L = 0; L <= N - 2; ++L) {
+        int M = M_start[L];
+        
+        // Điều kiện: L <= M < R < N
+        // Vậy M phải nhỏ hơn N-1 để còn ít nhất một phần tử cho phía AND
+        if (M < N - 1) {
+            int R = R_min[M + 1];
+            if (R < N) {
+                // Tất cả các đoạn từ [L, R] đến [L, N-1] đều thỏa mãn
+                dangerous_count += (N - R);
+            }
+        }
+    }
+
+    cout << dangerous_count << endl;
+
+    return 0;
+}

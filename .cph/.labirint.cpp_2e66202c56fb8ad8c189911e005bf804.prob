@@ -1,0 +1,1 @@
+{"name":"Local: labirint","url":"e:\\cpp\\labirint.cpp","tests":[{"id":1777362989908,"input":"4 4\nCCC\nCPC\nPPP\nCNP\nZZZZ\nPPPP\nCPZC \n4\n3 1 2 3\n1 1 4 4\n2 2 3 3\n1 4 4 1","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\labirint.cpp","group":"local","local":true}

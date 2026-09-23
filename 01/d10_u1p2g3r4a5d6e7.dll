@@ -1,0 +1,127 @@
+/*
+ * ==========================================================================================
+ * ĐỀ BÀI: Nâng Cấp Độ Trễ Mạng (PREVOI 2025)
+ * - Cho đồ thị N máy chủ và M đường truyền. Ban đầu, mọi đường truyền có độ trễ (trọng số) là 0.
+ * - Chương trình nâng cấp kéo dài M ngày. Ngày thứ i, đường truyền thứ i tăng độ trễ lên 1.
+ * - Yêu cầu: Sau mỗi ngày i (1 <= i <= M), tính tổng độ trễ ngắn nhất giữa mọi cặp máy chủ.
+ * - Ràng buộc: N <= 500, M <= N*(N-1)/2. Thời gian: 1.0s.
+ *
+ * GIẢI THUẬT TỐI ƯU:
+ * 1. Tư duy ngược: Thay vì tính từ ngày 1 đến M (cạnh 0 thành 1 - khoảng cách tăng), ta tính từ
+ * ngày M ngược về ngày 1 (cạnh 1 thành 0 - khoảng cách giảm).
+ * 2. Khởi tạo: Tại ngày M, tất cả M cạnh đều có trọng số 1. Ta dùng BFS từ mỗi đỉnh để tìm
+ * khoảng cách ngắn nhất APSP (All-Pairs Shortest Paths). Độ phức tạp: O(N * (N + M)).
+ * 3. Xử lý ngược (Ngày i -> i-1): Khi cạnh thứ i (u, v) chuyển từ trọng số 1 về 0:
+ * - Nếu u và v đã có đường đi trọng số 0 (d[u][v] == 0), việc thêm cạnh trọng số 0 này
+ * không làm thay đổi bất kỳ đường đi ngắn nhất nào.
+ * - Nếu d[u][v] > 0, ta cập nhật lại toàn bộ ma trận d[a][b] theo công thức Floyd-Warshall:
+ * d[a][b] = min(d[a][b], d[a][u] + 0 + d[v][b], d[a][v] + 0 + d[u][b]).
+ * 4. Độ phức tạp: Vòng lặp cập nhật O(N^2) chỉ xảy ra tối đa (N-1) lần (khi gộp 2 thành phần
+ * liên thông trọng số 0). Tổng độ phức tạp: O(N^3 + NM + N^2), đủ để Pass 1s với N=500.
+ * ==========================================================================================
+ */
+
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+const int MAXN = 505;
+const int INF = 1e9;
+
+int n, m;
+int dist[MAXN][MAXN];
+pair<int, int> edges[125005];
+long long ans[125005];
+vector<int> adj[MAXN];
+
+// Cấu trúc DSU để quản lý các thành phần liên thông trọng số 0
+int parent[MAXN];
+int find_set(int v) {
+    if (v == parent[v]) return v;
+    return parent[v] = find_set(parent[v]);
+}
+
+void union_sets(int a, int b) {
+    a = find_set(a);
+    b = find_set(b);
+    if (a != b) parent[b] = a;
+}
+
+int main() {
+    // Tối ưu nhập xuất
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    if (!(cin >> n >> m)) return 0;
+
+    for (int i = 1; i <= m; ++i) {
+        cin >> edges[i].first >> edges[i].second;
+        adj[edges[i].first].push_back(edges[i].second);
+        adj[edges[i].second].push_back(edges[i].first);
+    }
+
+    // Bước 1: Tính APSP tại ngày M (tất cả cạnh trọng số 1) bằng BFS
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) dist[i][j] = INF;
+        dist[i][i] = 0;
+        queue<int> q;
+        q.push(i);
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            for (int v : adj[u]) {
+                if (dist[i][v] == INF) {
+                    dist[i][v] = dist[i][u] + 1;
+                    q.push(v);
+                }
+            }
+        }
+    }
+
+    // Tính tổng ban đầu tại ngày M
+    long long current_total_sum = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            current_total_sum += dist[i][j];
+        }
+    }
+
+    // Bước 2: DSU để theo dõi các cạnh trọng số 0
+    for (int i = 1; i <= n; ++i) parent[i] = i;
+
+    // Bước 3: Duyệt ngược từ ngày M về ngày 1
+    for (int i = m; i >= 1; --i) {
+        ans[i] = current_total_sum;
+
+        int u = edges[i].first;
+        int v = edges[i].second;
+
+        // Nếu u và v chưa thuộc cùng thành phần liên thông trọng số 0
+        if (find_set(u) != find_set(v)) {
+            // Cạnh i từ trọng số 1 thành trọng số 0 làm giảm khoảng cách
+            union_sets(u, v);
+
+            // Cập nhật ma trận khoảng cách O(N^2)
+            for (int a = 1; a <= n; ++a) {
+                if (dist[a][u] == INF && dist[a][v] == INF) continue;
+                for (int b = 1; b <= n; ++b) {
+                    int new_d = min(dist[a][u] + dist[v][b], dist[a][v] + dist[u][b]);
+                    if (new_d < dist[a][b]) {
+                        current_total_sum -= (dist[a][b] - new_d);
+                        dist[a][b] = new_d;
+                    }
+                }
+            }
+        }
+    }
+
+    // In kết quả từ ngày 1 đến ngày M
+    for (int i = 1; i <= m; ++i) {
+        cout << ans[i] << "\n";
+    }
+
+    return 0;
+}

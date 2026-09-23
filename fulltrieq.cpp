@@ -1,0 +1,235 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+#define ll long long
+const int N = 2e5 + 5;
+const int LOG = 19;
+
+struct Node {
+    int child[2];
+    int cnt;
+    ll sum;
+} tree[N * 40]; // Cấp phát tĩnh khoảng 8 triệu node
+
+int node_count = 0;
+int root[N], par[N][LOG + 1], h[N];
+
+int newNode(int old = 0) {
+    node_count++;
+    tree[node_count] = tree[old];
+    return node_count;
+}
+
+// Chèn giá trị x vào Trie, kế thừa từ phiên bản p_root
+int ins(int p_root, int x) {
+    int new_root = newNode(p_root);
+    int curr = new_root;
+    tree[curr].cnt++;
+    tree[curr].sum += x;
+    for (int i = 30; i >= 0; i--) {
+        int c = (x >> i) & 1;
+        tree[curr].child[c] = newNode(tree[curr].child[c]);
+        curr = tree[curr].child[c];
+        tree[curr].cnt++;
+        tree[curr].sum += x;
+    }
+    return new_root;
+}
+
+inline int get_cnt(int u, int v, int lc, int pre, int side) {
+    return tree[tree[u].child[side]].cnt + tree[tree[v].child[side]].cnt
+         - tree[tree[lc].child[side]].cnt - tree[tree[pre].child[side]].cnt;
+}
+
+inline ll get_sum(int u, int v, int lc, int pre, int side) {
+    return tree[tree[u].child[side]].sum + tree[tree[v].child[side]].sum
+         - tree[tree[lc].child[side]].sum - tree[tree[pre].child[side]].sum;
+}
+
+// --- Các hàm truy vấn (giữ nguyên logic của bạn nhưng thay đổi cách truy cập node) ---
+//so nho thu k
+int kth_smallest(int u, int v, int lc, int prelc, int k) {
+    int res = 0;
+    for (int i = 30; i >= 0; i--) {
+        int left_cnt = get_cnt(u, v, lc, prelc, 0);
+        if (left_cnt >= k) {
+            u = tree[u].child[0]; v = tree[v].child[0];
+            lc = tree[lc].child[0]; prelc = tree[prelc].child[0];
+        } else {
+            res |= (1 << i);
+            k -= left_cnt;
+            u = tree[u].child[1]; v = tree[v].child[1];
+            lc = tree[lc].child[1]; prelc = tree[prelc].child[1];
+        }
+    }
+    return res;
+}
+//tong k so nho nhat
+ll sum_k_smallest(int u, int v, int lc, int prelc, int k) {
+    ll total_sum = 0; int val = 0;
+    for (int i = 30; i >= 0; i--) {
+        int left_cnt = get_cnt(u, v, lc, prelc, 0);
+        if (left_cnt >= k) {
+            u = tree[u].child[0]; v = tree[v].child[0];
+            lc = tree[lc].child[0]; prelc = tree[prelc].child[0];
+        } else {
+            total_sum += get_sum(u, v, lc, prelc, 0);
+            val |= (1 << i);
+            k -= left_cnt;
+            u = tree[u].child[1]; v = tree[v].child[1];
+            lc = tree[lc].child[1]; prelc = tree[prelc].child[1];
+        }
+    }
+    return total_sum + (ll)k * val;
+}
+//so lon thu k
+int kth_largest(int u, int v, int lc, int prelc, int k) {
+    int res = 0;
+    for (int i = 30; i >= 0; i--) {
+        int right_cnt = get_cnt(u, v, lc, prelc, 1);
+        if (right_cnt >= k) {
+            res |= (1 << i);
+            u = tree[u].child[1]; v = tree[v].child[1];
+            lc = tree[lc].child[1]; prelc = tree[prelc].child[1];
+        } else {
+            k -= right_cnt;
+            u = tree[u].child[0]; v = tree[v].child[0];
+            lc = tree[lc].child[0]; prelc = tree[prelc].child[0];
+        }
+    }
+    return res;
+}
+//tong k so nho nhat
+ll sum_k_largest(int u, int v, int lc, int prelc, int k) {
+    ll total_sum = 0; int val = 0;
+    for (int i = 30; i >= 0; i--) {
+        int right_cnt = get_cnt(u, v, lc, prelc, 1);
+        if (right_cnt >= k) {
+            val |= (1 << i);
+            u = tree[u].child[1]; v = tree[v].child[1];
+            lc = tree[lc].child[1]; prelc = tree[prelc].child[1];
+        } else {
+            total_sum += get_sum(u, v, lc, prelc, 1);
+            k -= right_cnt;
+            u = tree[u].child[0]; v = tree[v].child[0];
+            lc = tree[lc].child[0]; prelc = tree[prelc].child[0];
+        }
+    }
+    return total_sum + (ll)k * val;
+}
+//tong so <=x trong doan u v
+ll sum_le(int u, int v, int lc, int prelc, int x) {
+    if (x < 0) return 0;
+    ll res = 0;
+    int cur_u = u, cur_v = v, cur_lc = lc, cur_pre = prelc;
+    for (int i = 30; i >= 0; i--) {
+        if ((x >> i) & 1) {
+            res += get_sum(cur_u, cur_v, cur_lc, cur_pre, 0);
+            cur_u = tree[cur_u].child[1]; cur_v = tree[cur_v].child[1];
+            cur_lc = tree[cur_lc].child[1]; cur_pre = tree[cur_pre].child[1];
+        } else {
+            cur_u = tree[cur_u].child[0]; cur_v = tree[cur_v].child[0];
+            cur_lc = tree[cur_lc].child[0]; cur_pre = tree[cur_pre].child[0];
+        }
+    }
+    int final_cnt = tree[cur_u].cnt + tree[cur_v].cnt - tree[cur_lc].cnt - tree[cur_pre].cnt;
+    return res + (ll)final_cnt * x;
+}
+//max xor w tu u den v
+int query_max_xor(int u, int v, int lc, int prelc, int a) {
+    int res = 0;
+    for (int i = 30; i >= 0; i--) {
+        int target = 1 - ((a >> i) & 1);
+        if (get_cnt(u, v, lc, prelc, target) > 0) {
+            res |= (1 << i);
+            u = tree[u].child[target]; v = tree[v].child[target];
+            lc = tree[lc].child[target]; prelc = tree[prelc].child[target];
+        } else {
+            u = tree[u].child[1 - target]; v = tree[v].child[1 - target];
+            lc = tree[lc].child[1 - target]; prelc = tree[prelc].child[1 - target];
+        }
+    }
+    return res;
+}
+//min xor w tu u den v
+int query_min_xor(int u, int v, int lc, int prelc, int a) {
+    int res = 0;
+    for (int i = 30; i >= 0; i--) {
+        int target = (a >> i) & 1;
+        if (get_cnt(u, v, lc, prelc, target) > 0) {
+            u = tree[u].child[target]; v = tree[v].child[target];
+            lc = tree[lc].child[target]; prelc = tree[prelc].child[target];
+        } else {
+            res |= (1 << i);
+            u = tree[u].child[1 - target]; v = tree[v].child[1 - target];
+            lc = tree[lc].child[1 - target]; prelc = tree[prelc].child[1 - target];
+        }
+    }
+    return res;
+}
+
+// --- LCA ---
+int get_lca(int u, int v) {
+    if (h[u] < h[v]) swap(u, v);
+    for (int i = LOG; i >= 0; i--)
+        if (h[u] - (1 << i) >= h[v]) u = par[u][i];
+    if (u == v) return u;
+    for (int i = LOG; i >= 0; i--)
+        if (par[u][i] != par[v][i]) {
+            u = par[u][i];
+            v = par[v][i];
+        }
+    return par[u][0];
+}
+
+int main() {
+        ios_base::sync_with_stdio(false);
+    cin.tie(NULL);cout.tie(NULL);
+    #define Task "a"
+    if (fopen(Task ".inp","r")) {
+        freopen(Task ".inp","r", stdin);
+        freopen(Task ".out","w", stdout);
+    }
+    int r_node, wr, Q;
+    cin>>r_node>>wr>>Q;
+
+    // Khởi tạo gốc
+    h[r_node] = 1;
+    root[r_node] = ins(0, wr);
+    for(int i=0; i<=LOG; i++) par[r_node][i] = 0;
+
+    while (Q--) {
+        int type; cin >> type;
+        if (type == 1) {
+            int id, p, w; cin >> id >> p >> w;
+            h[id] = h[p] + 1;
+            par[id][0] = p;
+            for (int i = 1; i <= LOG; i++) par[id][i] = par[par[id][i - 1]][i - 1];
+            root[id] = ins(root[p], w);
+        }
+        else if (type == 2) {
+            int id; cin >> id;
+            // Với Persistent Trie, việc xóa lá đơn giản là không dùng tới nó nữa
+            // Nếu cần giải phóng ID để dùng lại thì cần một hàng đợi
+        }
+        else {
+            int u, v, k_or_w; cin >> u >> v >> k_or_w;
+            int lc = get_lca(u, v);
+            int p_lc = par[lc][0];
+            int node_u = root[u], node_v = root[v], node_lc = root[lc], node_plc = root[p_lc];
+
+            if (type == 3) cout << kth_smallest(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+            else if (type == 4) cout << kth_largest(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+            else if (type == 5) cout << sum_k_smallest(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+            else if (type == 6) cout << sum_k_largest(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+            else if (type == 7) {
+                int r_val; cin >> r_val;
+                cout << sum_le(node_u, node_v, node_lc, node_plc, r_val)
+                     - sum_le(node_u, node_v, node_lc, node_plc, k_or_w - 1) << "\n";
+            }
+            else if (type ==8)cout << query_max_xor(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+            else if (type == 9) cout << query_min_xor(node_u, node_v, node_lc, node_plc, k_or_w) << "\n";
+        }
+    }
+    return 0;
+}

@@ -1,0 +1,149 @@
+#include <bits/stdc++.h>
+#define task "a"
+#define ll long long
+#define ld long double
+#define ii pair<int, int>
+#define fi first
+#define se second
+#define all(x) x.begin(), x.end()
+#define mems(x, y) memset(x, y, sizeof(x));
+using namespace std;
+const int mod = 1e9 + 7, moi = 2e5 + 9;
+const ll INF = 1e18;
+const ld EFS = 1e-12;
+const int dx[] = { 1, -1, 0, 0};
+const int dy[] = { 0, 0, 1, -1};
+
+struct pt {
+    int child[26];
+    int cntE, cntP;
+};
+
+struct TrieXau {
+    vector<pt> Trie;
+
+    void init() {
+        Trie.assign(1, pt());
+    }
+
+    void add(string s) {
+        int u = 0;
+        for(int i = 0; i < s.size(); i++) {
+            int c = s[i] - 'a';
+            if(!Trie[u].child[c]) {
+                Trie[u].child[c] = Trie.size();
+                Trie.emplace_back();
+            }
+
+            u = Trie[u].child[c];
+            Trie[u].cntP++;
+        }
+
+        Trie[u].cntE++;
+    }
+
+    void del(string s) {
+        int u = 0;
+        for(int i = 0; i < s.size(); i++) {
+            int c = s[i] - 'a';
+            u = Trie[u].child[c];
+            Trie[u].cntP--;
+        }
+
+        Trie[u].cntE--;
+    }
+
+    ll cntpreP(string s) {
+        int u = 0;
+        for(int i = 0; i < s.size(); i++) {
+            int c = s[i] - 'a';
+            if(!Trie[u].child[c]) return 0;
+            u = Trie[u].child[c];
+
+        }
+
+        return Trie[u].cntP;
+    }
+
+    ll cntP(string s) {
+        int u = 0;
+        for(int i = 0; i < s.size(); i++) {
+            int c = s[i] - 'a';
+            if(!Trie[u].child[c]) return 0;
+            u = Trie[u].child[c];
+
+        }
+
+        return Trie[u].cntE;
+    }
+
+};
+
+int q;
+TrieXau t;
+
+void Input() {
+    cin >> q;
+
+    t.init();
+
+    while(q--) {
+        int type;
+        cin >> type;
+
+        if(type == 1) {
+            string s;
+            cin >> s;
+
+            t.add(s);
+        }
+
+        if(type == 2) {
+            string s;
+            cin >> s;
+
+            t.del(s);
+        }
+        //co xau s hay ko
+        if(type == 3) {
+            string s;
+            cin >> s;
+
+            if(t.cntP(s) > 0) cout << "YES" << '\n';
+            else cout << "NO" << '\n';
+        }
+        //dem so xau co tien to la s
+        if(type == 4) {
+            string s;
+            cin >> s;
+
+            cout << t.cntpreP(s) << '\n';
+        }
+        //dem so xau dung bang s
+        if(type == 5) {
+            string s;
+            cin >> s;
+
+            cout << t.cntP(s) << '\n';
+        }
+
+    }
+}
+
+int main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    cout.tie(NULL);
+
+    if(fopen(task".inp","r")){
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1;
+    //cin >> t;
+    while (t --) {
+        Input();
+    }
+
+    cerr << "Time: " << (1.0 * clock() / CLOCKS_PER_SEC) << " s.\n";
+}

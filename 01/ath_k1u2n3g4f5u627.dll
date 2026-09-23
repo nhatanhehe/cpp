@@ -1,0 +1,61 @@
+#include <bits/stdc++.h>
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+using namespace std;
+//using namespace __gnu_pbds;
+#define LongDepTrai "kungfu2"
+#define ll long long
+#define int long long
+#define ull unsigned long long
+#define ld long double
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii,ii>
+#define pll pair<ll,ll>
+#define vi vector<int>
+#define vii vector<ii>
+#define vll vector<ll>
+#define fi first
+#define se second
+#define pb push_back
+#define all(x) (x).begin(), (x).end()
+#define sz(x) int((x).size())
+#define order_set(T) tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>
+
+inline ll add(ll a, ll b, ll mod){ a += b; if(a >= mod) a -= mod; return a; }
+inline ll sub(ll a, ll b, ll mod){ a -= b; if(a < 0) a += mod; return a; }
+inline ll mul(ll a, ll b, ll mod){ return ( (ll)a * b ) % mod; }
+
+static mt19937_64 rng((unsigned)chrono::steady_clock::now().time_since_epoch().count());
+const int N=2e3+9;
+int n,a[N];
+set<int> ans;
+void Try(int i,int sum,int mx){
+    if(i>n) {
+        if(1<=sum && sum<=mx)
+        ans.insert(sum);
+        return;
+    }
+    for(int j=-1;j<=1;j+=2){
+        Try(i+1,sum+j*a[i],max(mx,a[i]*j));
+    }
+}
+signed main(){
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);cout.tie(0);
+
+    if(fopen(LongDepTrai".inp","r")){
+        freopen(LongDepTrai".inp","r",stdin);
+        freopen(LongDepTrai".out","w",stdout);
+    }
+    cin>>n;
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+    }
+    Try(1,0,0);
+    cout<<ans.size();
+
+
+    return 0;
+}
+

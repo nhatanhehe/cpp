@@ -1,0 +1,183 @@
+/*
+ * ĐỀ BÀI: TRUY VẤN DÃY NGOẶC ĐÚNG (PREVOI 2025)
+ * ----------------------------------------------------------------------------
+ * TÓM TẮT GIẢI THUẬT:
+ * 1. Công thức LCBS: Độ đúng = 2 * (Tổng số '(' đã thêm - Số '(' hiện còn dư).
+ * Gọi A[i] là tổng '(' đã thêm, f[i] là số '(' còn dư.
+ * Kết quả đoạn [l, r] = 2 * (Sum(A[l..r]) - Sum(f[l..r])).
+ * 2. Cập nhật:
+ * - x > 0: A[i] += x, f[i] += x (Range Add).
+ * - x < 0: f[i] = max(0, f[i] - |x|) (Range Add sau đó Range Chmax với 0).
+ * 3. Segment Tree Beats:
+ * - Quản lý f[i] hỗ trợ Range Add và Range Chmax 0.
+ * - Quản lý A[i] hỗ trợ Range Add.
+ * 4. Độ phức tạp: O(Q log^2 N) hoặc O(Q log N) với hằng số nhỏ, pass 5e5/4s.
+ * ----------------------------------------------------------------------------
+ */
+
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+const long long INF = 1e18;
+const int MAXN = 500005;
+
+struct Node {
+    long long sum_A, sum_f;
+    long long min1, min2, min_cnt;
+    long long lazy_A, lazy_f;
+} tree[4 * MAXN];
+
+int n, q;
+
+void push_up(int node) {
+    tree[node].sum_A = tree[2 * node].sum_A + tree[2 * node + 1].sum_A;
+    tree[node].sum_f = tree[2 * node].sum_f + tree[2 * node + 1].sum_f;
+
+    if (tree[2 * node].min1 < tree[2 * node + 1].min1) {
+        tree[node].min1 = tree[2 * node].min1;
+        tree[node].min_cnt = tree[2 * node].min_cnt;
+        tree[node].min2 = min(tree[2 * node].min2, tree[2 * node + 1].min1);
+    } else if (tree[2 * node].min1 > tree[2 * node + 1].min1) {
+        tree[node].min1 = tree[2 * node + 1].min1;
+        tree[node].min_cnt = tree[2 * node + 1].min_cnt;
+        tree[node].min2 = min(tree[2 * node].min1, tree[2 * node + 1].min2);
+    } else {
+        tree[node].min1 = tree[2 * node].min1;
+        tree[node].min_cnt = tree[2 * node].min_cnt + tree[2 * node + 1].min_cnt;
+        tree[node].min2 = min(tree[2 * node].min2, tree[2 * node + 1].min2);
+    }
+}
+
+void apply_add_A(int node, int l, int r, long long val) {
+    tree[node].sum_A += val * (r - l + 1);
+    tree[node].lazy_A += val;
+}
+
+void apply_add_f(int node, int l, int r, long long val) {
+    tree[node].sum_f += val * (r - l + 1);
+    tree[node].min1 += val;
+    if (tree[node].min2 != INF) tree[node].min2 += val;
+    tree[node].lazy_f += val;
+}
+
+void apply_chmax(int node, long long val) {
+    if (tree[node].min1 >= val) return;
+    tree[node].sum_f += (val - tree[node].min1) * tree[node].min_cnt;
+    tree[node].min1 = val;
+}
+
+void push_down(int node, int l, int r) {
+    int mid = (l + r) / 2;
+    // Push lazy A
+    if (tree[node].lazy_A != 0) {
+        apply_add_A(2 * node, l, mid, tree[node].lazy_A);
+        apply_add_A(2 * node + 1, mid + 1, r, tree[node].lazy_A);
+        tree[node].lazy_A = 0;
+    }
+    // Push lazy f (add then chmax)
+    if (tree[node].lazy_f != 0) {
+        apply_add_f(2 * node, l, mid, tree[node].lazy_f);
+        apply_add_f(2 * node + 1, mid + 1, r, tree[node].lazy_f);
+        tree[node].lazy_f = 0;
+    }
+    apply_chmax(2 * node, tree[node].min1);
+    apply_chmax(2 * node + 1, tree[node].min1);
+}
+
+void update_A(int node, int l, int r, int ql, int qr, int val) {
+    if (ql <= l && r <= qr) {
+        apply_add_A(node, l, r, val);
+        return;
+    }
+    push_down(node, l, r);
+    int mid = (l + r) / 2;
+    if (ql <= mid) update_A(2 * node, l, mid, ql, qr, val);
+    if (qr > mid) update_A(2 * node + 1, mid + 1, r, ql, qr, val);
+    push_up(node);
+}
+
+void update_add_f(int node, int l, int r, int ql, int qr, int val) {
+    if (ql <= l && r <= qr) {
+        apply_add_f(node, l, r, val);
+        return;
+    }
+    push_down(node, l, r);
+    int mid = (l + r) / 2;
+    if (ql <= mid) update_add_f(2 * node, l, mid, ql, qr, val);
+    if (qr > mid) update_add_f(2 * node + 1, mid + 1, r, ql, qr, val);
+    push_up(node);
+}
+
+void update_chmax_f(int node, int l, int r, int ql, int qr, long long val) {
+    if (l > qr || r < ql || tree[node].min1 >= val) return;
+    if (ql <= l && r <= qr && tree[node].min2 > val) {
+        apply_chmax(node, val);
+        return;
+    }
+    push_down(node, l, r);
+    int mid = (l + r) / 2;
+    update_chmax_f(2 * node, l, mid, ql, qr, val);
+    update_chmax_f(2 * node + 1, mid + 1, r, ql, qr, val);
+    push_up(node);
+}
+
+pair<long long, long long> query(int node, int l, int r, int ql, int qr) {
+    if (ql <= l && r <= qr) return {tree[node].sum_A, tree[node].sum_f};
+    push_down(node, l, r);
+    int mid = (l + r) / 2;
+    pair<long long, long long> res = {0, 0};
+    if (ql <= mid) {
+        auto p = query(2 * node, l, mid, ql, qr);
+        res.first += p.first; res.second += p.second;
+    }
+    if (qr > mid) {
+        auto p = query(2 * node + 1, mid + 1, r, ql, qr);
+        res.first += p.first; res.second += p.second;
+    }
+    return res;
+}
+
+void build(int node, int l, int r) {
+    tree[node].min2 = INF;
+    tree[node].min_cnt = (r - l + 1);
+    if (l == r) return;
+    int mid = (l + r) / 2;
+    build(2 * node, l, mid);
+    build(2 * node + 1, mid + 1, r);
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    freopen("PARENSEQ.INP", "r", stdin);
+    freopen("PARENSEQ.OUT", "w", stdout);
+
+    if (!(cin >> n >> q)) return 0;
+    build(1, 1, n);
+
+    while (q--) {
+        int type;
+        cin >> type;
+        if (type == 1) {
+            int l, r, x;
+            cin >> l >> r >> x;
+            if (x > 0) {
+                update_A(1, 1, n, l, r, x);
+                update_add_f(1, 1, n, l, r, x);
+            } else {
+                update_add_f(1, 1, n, l, r, x); // x âm
+                update_chmax_f(1, 1, n, l, r, 0);
+            }
+        } else {
+            int l, r;
+            cin >> l >> r;
+            auto res = query(1, 1, n, l, r);
+            cout << 2LL * (res.first - res.second) << "\n";
+        }
+    }
+    return 0;
+}

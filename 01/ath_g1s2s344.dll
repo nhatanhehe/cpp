@@ -1,0 +1,93 @@
+/*
+1 l r: a[i]=sqrt(a[i]).
+2 l r: sum(a[i]).
+*/
+
+#include <iostream>
+#include <vector>
+#include <cmath>
+#include <algorithm>
+
+using namespace std;
+
+/**
+ * GSS4 - Can you answer these queries IV
+ * Strategy: Segment Tree with pruning.
+ * Since sqrt(x) reaches 1 very quickly (max 6-7 steps for 10^18),
+ * we stop updating a range if its maximum value is 1.
+ */
+
+const int MAXN = 100005;
+long long a[MAXN];
+long long tree[4 * MAXN];
+long long max_tree[4 * MAXN];
+
+void push_up(int node) {
+    tree[node] = tree[2 * node] + tree[2 * node + 1];
+    max_tree[node] = max(max_tree[2 * node], max_tree[2 * node + 1]);
+}
+
+void build(int node, int start, int end) {
+    if (start == end) {
+        tree[node] = max_tree[node] = a[start];
+        return;
+    }
+    int mid = (start + end) / 2;
+    build(2 * node, start, mid);
+    build(2 * node + 1, mid + 1, end);
+    push_up(node);
+}
+
+void update(int node, int start, int end, int l, int r) {
+    // Pruning: if max value in this range is 1, no need to update
+    if (max_tree[node] <= 1) return;
+
+    // Leaf node
+    if (start == end) {
+        tree[node] = floor(sqrt(tree[node]));
+        max_tree[node] = tree[node];
+        return;
+    }
+
+    int mid = (start + end) / 2;
+    if (l <= mid) update(2 * node, start, mid, l, r);
+    if (r > mid) update(2 * node + 1, mid + 1, end, l, r);
+    push_up(node);
+}
+
+long long query(int node, int start, int end, int l, int r) {
+    if (r < start || end < l) return 0;
+    if (l <= start && end <= r) return tree[node];
+
+    int mid = (start + end) / 2;
+    return query(2 * node, start, mid, l, r) + query(2 * node + 1, mid + 1, end, l, r);
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, caseNum = 1;
+    while (cin >> n) {
+        for (int i = 1; i <= n; i++) cin >> a[i];
+
+        build(1, 1, n);
+
+        int m;
+        cin >> m;
+        cout << "Case #" << caseNum++ << ":" << endl;
+        while (m--) {
+            int type, l, r;
+            cin >> type >> l >> r;
+            if (l > r) swap(l, r); // Problem doesn't guarantee l <= r
+
+            if (type == 0) {
+                update(1, 1, n, l, r);
+            } else {
+                cout << query(1, 1, n, l, r) << "\n";
+            }
+        }
+        cout << endl; // Blank line after each case
+    }
+    return 0;
+}

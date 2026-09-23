@@ -1,0 +1,191 @@
+/*
+====================================================
+BÀI TOÁN: SCORING – CHẤM ĐIỂM
+====================================================
+
+TÓM TẮT ĐỀ BÀI
+----------------------------------------------------
+- Có n học sinh, được nối với nhau bởi n-1 cặp bạn trực tiếp → tạo thành một cây.
+- Mỗi học sinh i có số bài làm được a[i], các a[i] đều khác nhau.
+- Cô giáo chấm điểm b[i] (số nguyên từ 1 đến k), sao cho:
+    Với mọi cặp bạn trực tiếp (u, v):
+        + Nếu a[u] > a[v] thì b[u] > b[v]
+        + Nếu a[u] < a[v] thì b[u] < b[v]
+- Yêu cầu: Đếm số cách gán điểm b[i] hợp lệ (mod 1e9+7).
+
+----------------------------------------------------
+Ý TƯỞNG GIẢI
+----------------------------------------------------
+
+1) SUBTASK NHỎ (k ≤ 10)
+- Dùng quay lui (Try):
+    + Thử mọi hoán vị chọn n giá trị khác nhau từ [1..k]
+    + Với mỗi cách gán, kiểm tra toàn bộ n-1 cạnh
+    + Nếu vi phạm thứ tự theo a[i] thì loại
+- Độ phức tạp: O(k! * n) → chỉ dùng cho k nhỏ
+
+----------------------------------------------------
+2) SUBTASK ĐẦY ĐỦ (k lớn)
+----------------------------------------------------
+
+Nhận xét quan trọng:
+- Do các a[i] khác nhau và đồ thị là cây,
+  nếu gốc là đỉnh có a nhỏ nhất (a = 1),
+  thì trên mỗi cạnh, điểm luôn tăng từ gốc ra xa.
+
+Cách làm:
+- Chọn root là đỉnh có a[i] = 1
+- Bài toán trở thành:
+    + Gán n số khác nhau trong [1..k]
+    + Sao cho trên cây, điểm tăng dần từ gốc xuống lá
+
+Số cách gán:
+----------------------------------------------------
+A) Chọn n giá trị phân biệt trong [1..k]:
+   = C(k, n) * n! = k * (k-1) * ... * (k-n+1)
+
+B) Với mỗi tập giá trị đã chọn:
+   - Số cách gán vào các đỉnh sao cho giữ thứ tự cây
+   - Đây là số cách sắp xếp topo của cây (heap increasing)
+   - Công thức:
+        ans *= C(size_subtree[v], remaining)
+   (tính bằng DFS, trộn các cây con)
+
+----------------------------------------------------
+CÁCH CÀI ĐẶT
+----------------------------------------------------
+- Tiền xử lý factorial và inverse factorial
+- Tính tổ hợp C(n, k)
+- DFS từ root để tính size subtree
+- Nhân dần số cách ghép các cây con
+- Kết quả cuối cùng lấy mod 1e9+7
+
+----------------------------------------------------
+ĐỘ PHỨC TẠP
+----------------------------------------------------
+- Thời gian: O(n)
+- Bộ nhớ: O(n)
+- Đáp ứng n lên tới 1e5
+
+====================================================
+*/
+
+#include<bits/stdc++.h>
+using namespace std;
+#define task "scoring"
+#define int long long
+#define ll long long
+#define ii pair<int,int>
+#define fi first
+#define se second
+#define pb push_back
+#define vi vector<int>
+#define vii vector<ii>
+
+const int N=1e6+1;
+const int mod=1e9+7;
+int n,k,res=0,ok[N],x[N],a[N],sz[N];
+vii ed;
+vi g[N];
+void Try(int i){
+    if(i>n){
+        for(ii y:ed){
+            int u=y.fi;
+            int v=y.se;
+
+            if((a[u]<a[v] && x[u]>x[v])||(a[u]>a[v] && x[u]<x[v])) return;
+        }
+        res++;
+        return;
+    }
+    for(int j=1;j<=k;j++){
+        if(ok[j]) continue;
+        x[i]=j;
+        ok[j]=1;
+        Try(i+1);
+        ok[j]=0;
+        x[i]=0;
+    }
+}
+void sub1(){
+    Try(1);
+    cout<<res<<"\n";
+}
+int f[N];
+int iFact[N];
+int fastPow(int a, int k) {
+	int res = 1;
+	while (k) {
+        if (k & 1) {
+            res = 1ll * res * a % mod;
+        }
+        a = 1ll * a * a % mod;
+        k >>= 1;
+    }
+    return res;
+}
+int C(int k, int n) {
+//    if (k > n) return 1;
+    return 1ll * (1ll * f[n] * iFact[k] % mod) * iFact[n - k] % mod;
+}
+int ans=1;
+void dfs(int u,int p){
+    sz[u]=1;
+    for(int v:g[u]){
+        if(v==p) continue;
+        dfs(v,u);
+        sz[u]+=sz[v];
+    }
+    int sum=sz[u]-1;
+    for(int v:g[u]){
+        if(v==p) continue;
+        ans=(ans*C(sz[v],sum))%mod;
+        sum-=sz[v];
+    }
+}
+void full(){
+    f[0] = 1;
+    for (int i = 1; i < N; i++) {
+        f[i] = f[i-1]*i%mod;
+    }
+    iFact[N-1] = fastPow(f[N-1], mod - 2);
+    for (int i = N-2; i >= 0; i--) {
+        iFact[i] = iFact[i + 1] * (i + 1) % mod;
+    }
+    int root=-1;
+    for(int i=1;i<=n;i++){
+        if(a[i]==1) root=i;
+    }
+    int tmp=1;
+    for(int i=k-n+1;i<=k;i++){
+        tmp=(tmp*i)%mod;
+    }
+    for(int i=1;i<=n;i++){
+        tmp=(tmp*fastPow(i,mod-2))%mod;
+    }
+    ans=tmp;
+    dfs(root,-1);
+    cout<<ans;
+}
+signed main(){
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);cout.tie(0);
+
+    // freopen(task".inp","r",stdin);
+    // freopen(task".out","w",stdout);
+
+    cin>>n>>k;
+    for(int i=1;i<n;i++){
+        int u,v;
+        cin>>u>>v;
+        g[u].pb(v);
+        g[v].pb(u);
+        ed.pb({u,v});
+    }
+    for(int i=1;i<=n;i++) cin>>a[i];
+    if(k<=10)
+    sub1();
+    else
+    full();
+
+}

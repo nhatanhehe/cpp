@@ -1,0 +1,94 @@
+/*
+ * =============================================================
+ * ĐỀ BÀI: ĐẾM CHUỖI SỐ CHIA HẾT (DIVISIBLE SEQUENCES)
+ * - Cho số nguyên dương N. Đếm số lượng chuỗi a1, a2, ..., ak sao cho:
+ * 1. a1 + a2 + ... + ak = N
+ * 2. a_{i+1} chia hết cho a_i với mọi 1 <= i < k.
+ * - Giới hạn: N <= 500,000; T <= 100,000 truy vấn.
+ * - Kết quả lấy modulo 10^9 + 7.
+ *
+ * GIẢI THUẬT (DP - Quy hoạch động):
+ * - Gọi f[n] là số lượng chuỗi hợp lệ có tổng bằng n.
+ * - Giả sử phần tử đầu tiên của chuỗi là a1 = x.
+ * - Vì các phần tử sau đều chia hết cho a1, nên x phải là ước của (a1 + a2 + ... + ak) = N.
+ * - Khi đặt a1 = x, các phần tử tiếp theo sẽ có dạng: a2 = x*b2, a3 = x*b3, ..., ak = x*bk.
+ * - Thay vào tổng: x + x*b2 + ... + x*bk = N  =>  1 + b2 + ... + bk = N/x.
+ * - Hay: b2 + ... + bk = N/x - 1.
+ * - Số cách chọn bộ (b2, ..., bk) thỏa mãn tính chất chia hết chính là f[N/x - 1].
+ * - Công thức truy hồi: f[i] = tổng (f[i/x - 1]) với mọi x là ước của i.
+ * - Cơ sở: f[0] = 1 (tương ứng với việc đã chọn xong chuỗi).
+ * =============================================================
+ */
+
+/*ㅤ∧＿∧
+　(　･∀･)
+　(　つ┳⊃
+ε (_)へ⌒ヽﾌ
+ (　　(　･ω･)
+ ◎―◎  ⊃  ⊃
+BePhuongSuperSuwi
+From TK4 - CHT
+ㅤㅤ／ ⌒＼____
+　 /・　　 ）　　\
+　/ノへ ノ　　　 /|
+ノ　　  ＼\ |/_/_/*/
+
+
+#include<bits/stdc++.h>
+#define task "main"
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+#define endl '\n'
+#define int long long
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 1e18
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+#define ordered_set tree<int, null_type,less<int>, rb_tree_tag,tree_order_statistics_node_update>
+#define __lcm(a,b) (1ll * ((a) / __gcd((a), (b))) * (b))
+using namespace std;
+//using namespace __gnu_pbds;
+const int maxn = 1e6 + 5;
+const int lim = 5e5;
+vector <int> uoc[maxn];
+int mod = 1e9 + 7;
+int f[maxn];
+
+main() {
+    ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+
+    // Tiền xử lý tìm ước số của tất cả các số đến lim (Sàng ước)
+    for (int i = 1; i <= lim; i++) {
+        for (int j = i; j <= lim; j += i) {
+            uoc[j].pb(i);
+        }
+    }
+
+    // Quy hoạch động tính trước kết quả cho mọi n
+    f[0] = 1;
+    for (int i = 1; i <= lim; i++) {
+        for (int x : uoc[i]) {
+            // Áp dụng công thức: f[i] = Σ f[i/x - 1]
+            f[i] = (f[i] + f[i / x - 1]) % mod;
+        }
+    }
+
+    int t = 1; cin >> t;
+    while(t--) {
+        int n; cin >> n;
+        if(n <= lim) cout << f[n] << endl;
+        else cout << 0 << endl; // Phòng trường hợp n > lim
+    }
+}

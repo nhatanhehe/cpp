@@ -1,0 +1,72 @@
+#include<bits/stdc++.h>
+using namespace std;
+#define int long long
+typedef long double ld;
+#define pb push_back
+#define pf push_front
+#define ii pair<int,int>
+#define iii pair<int,pair<int,int>>
+#define fi first
+#define se second
+const int inf=1e18;
+const int N=2e5+5;
+const int mod=1e9+7;
+const int base=311;
+#define On(mask,i) (mask|(1LL<<i))
+#define Off(mask,i) (mask^(1LL<<i))
+int mul(int a,int b){
+    return (a%mod)*(b%mod)%mod;
+}
+int sub(int a,int b){
+    return ((a-b)%mod+mod)%mod;
+}
+int add(int a,int b){
+    return (a%mod+b%mod)%mod;
+}
+int n,m,u[N],v[N],id[N],low[N],cnt,ans,scc[N],res,f[N];
+vector<int>adj[N];
+map<int,int>M;
+bool vis[N];
+stack<int>s;
+void dfs(int u){
+    id[u]=low[u]=++cnt;
+    s.push(u);
+    for(auto v:adj[u]){
+        if(!vis[v]){
+            if(id[v]) low[u]=min(low[u],low[v]);
+            else dfs(v),low[u]=min(low[u],low[v]);
+        }
+    }
+    if(low[u]==id[u]){
+        ans++;
+        int v;
+        do{
+            v=s.top();
+            scc[v]=ans;
+            vis[v]=1;
+            s.pop();
+        }while(u!=v);
+    }
+}
+main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);cout.tie(NULL);
+    cin>>n>>m;
+    for(int i=1;i<=m;i++){
+        cin>>u[i]>>v[i];
+        adj[u[i]].pb(v[i]);
+    }
+    for(int i=1;i<=n;i++){
+        if(!id[i]) dfs(i);
+    }
+    res=0;
+    for(int i=1;i<=m;i++){
+        if(scc[u[i]]!=scc[v[i]]){
+            f[scc[v[i]]]=1;
+        }
+    }
+    for(int i=1;i<=ans;i++){
+        if(!f[i]) res++;
+    }
+    cout<<res;
+}

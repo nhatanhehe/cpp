@@ -1,0 +1,119 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define int long long
+#define ii pair<int,int>
+#define fi first
+#define se second
+#define pb push_back
+
+const int N=1e5+9;
+int n,q,par[N],ans[N];
+ii ask[N];
+struct DSU{
+     int root[N],sz[N];
+    stack<ii> changes;
+
+    DSU(int n){
+        for(int i=1;i<=n;i++){
+            root[i]=i;
+            sz[i]=1;
+        }
+    }
+    int acs(int u){
+        while(u!=root[u]) u=root[u];
+        return u;
+    }
+    bool unite(int u,int v){
+        u=acs(u);
+        v=acs(v);
+
+        if(u==v) return 0;
+        if(sz[u]<sz[v]) swap(u,v);
+
+        changes.push({u,sz[u]});
+        changes.push({v,sz[v]});
+
+        root[v]=u;
+        sz[u]+=sz[v];
+        return 1;
+    }
+    void rollback(int steps){
+        while(steps--){
+            int x=changes.top().fi;
+            int old=changes.top().se;
+            changes.pop();
+            root[x]=x;
+            sz[x]=old;
+        }
+    }
+};
+vector<ii> node[N*4];
+void add_edge(int i,int l,int r,int u,int v,ii e){
+    if(l>v || r<u) return;
+    if(l<=u && v<=r){
+        node[i].pb(e);
+        return;
+    }
+    add_edge(i*2,l,r,u,(u+v)/2,e);
+    add_edge(i*2+1,l,r,(u+v)/2+1,v,e);
+}
+void solve(int i,int l,int r,DSU& dsu){
+    int steps=dsu.changes.size();
+    for(ii e:node[i]){
+        dsu.unite(e.fi,e.se);
+    }
+    if(l==r)
+    {
+        if(ask[l].fi!=0){
+            ans[l]=(dsu.acs(ask[l].fi)==dsu.acs(ask[l].se));
+        }
+    }
+    else
+    {
+        solve(i*2,l,(l+r)/2,dsu);
+        solve(i*2+1,(l+r)/2+1,r,dsu);
+    }
+    dsu.rollback(dsu.changes.size()-steps);
+}
+signed main(){
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);cout.tie(0);
+
+    cin>>n>>q;
+    DSU dsu(n);
+    map<ii,vector<int>> active;
+    for(int i=1;i<=q;i++){
+        int t,x,y;
+        cin>>t>>x>>y;
+        if(t==1){
+            if(x<y) swap(x,y);
+            active[{x,y}].pb(i);
+        }
+        else
+        if(t==2){
+            if(x<y) swap(x,y);
+            auto it=active.find({x,y});
+            if(it != active.end() && !it->second.empty()){
+                int st = it->second.back();
+                it->second.pop_back();
+                if(st <= i-1) add_edge(1, st, i-1, 1,q,{x,y});
+            }
+        }
+        else{
+            ask[i]={x,y};
+        }
+    }
+    for(auto &kv : active){
+        ii edge = kv.first;
+        for(int st : kv.second){
+            if(st <= q) add_edge(1, st, q,1,q, edge);
+        }
+    }
+    solve(1,1,q,dsu);
+    for(int i=1;i<=q;i++){
+        if(ask[i].fi!=0){
+            cout<<ans[i];
+        }
+    }
+}
+

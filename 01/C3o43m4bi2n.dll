@@ -1,0 +1,21 @@
+
+ll f[1000006];
+ll exp(int a,int n){
+    if(n==0) return 1;
+    if(n==1) return a;
+    int t=exp(a,n/2);
+    if(n&1) return mul(mul(t,t),a);
+    else return mul(t,t);
+}
+ll C(ll n,ll k){
+    ll a=f[n];
+    ll b=mul(f[k],f[n-k]);
+    return mul(a,exp(b,mod-2));
+}
+void cal(){
+    f[0]=1;
+    for(int i=1;i<=1e6;i++){
+        f[i]=mul(f[i-1],i);
+    }
+}
+//Chia keo Euler C(n+k-1,k-1);

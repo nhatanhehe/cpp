@@ -1,0 +1,1 @@
+{"name":"Local: kquery2","url":"e:\\cpp\\kquery2.cpp","tests":[{"id":1790045264454,"input":"5\n5 1 2 3 4\n6\nQ 2 4 1\nS 4 10\nQ 4 4 4\nS 3 1\nS 1 2\nQ 1 5 2\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\kquery2.cpp","group":"local","local":true}

@@ -1,0 +1,1 @@
+{"name":"Local: xorpath","url":"e:\\cpp\\xorpath.cpp","tests":[{"id":1780145851391,"input":"5 5 5\n1 2 2\n2 3 2\n3 4 2\n2 5 0\n5 3 1\n\n2 1 4\n1 4\n2 1 4\n1 2\n2 1 4\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\xorpath.cpp","group":"local","local":true}

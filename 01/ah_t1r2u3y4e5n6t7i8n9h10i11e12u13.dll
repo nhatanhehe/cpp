@@ -1,0 +1,165 @@
+/*
+ * =============================================================================
+ * ĐỀ BÀI: TỐI ƯU CƯỜNG ĐỘ TÍN HIỆU TRẠM VŨ TRỤ (POWER TRANSMISSION)
+ * * 1. TÓM TẮT:
+ * - Cho đồ thị có hướng $n$ nút và $m$ cạnh ($n \le 100, m \le 200$).
+ * - Mỗi nút $i$ có giới hạn cường độ $p_i$.
+ * - Mỗi cạnh $(u, v)$ có hệ số nhân $w_i$. Tín hiệu qua cạnh này: $I_v = I_u \times w_i$.
+ * - Tín hiệu xuất phát từ nút 1 với cường độ 1.
+ * - Yêu cầu: Tìm cường độ lớn nhất đạt được tại nút $n$ mà không vi phạm giới hạn $p$
+ * tại bất kỳ nút nào trên đường đi.
+ * * 2. GIẢI THUẬT (DP + SQUARE ROOT DECOMPOSITION):
+ * - Vì $p_i$ rất lớn ($10^9$) nhưng $n, m$ nhỏ, ta dùng kỹ thuật chia căn với $S = 32000$.
+ * - Ý tưởng: Chia đường đi thành 2 phần, mỗi phần có tích hệ số nhân $\le S$.
+ * - dp1[u][s]: Boolean, kiểm tra xem có thể đi từ nút 1 đến $u$ với tích đúng bằng $s$ ($s \le S$).
+ * - dp2[v][s]: Cường độ tối đa tại $v$ để từ đó đi đến được $n$ với tích hệ số nhân thêm là $s$ ($s \le S$).
+ * - Quy trình:
+ * + BFS xuôi: Tính dp1 từ nút 1.
+ * + Dijkstra ngược: Tính dp2 từ nút $n$.
+ * + Hợp nhất: Duyệt mọi cạnh $(u, v, w)$, tìm cặp $(s1, s2)$ sao cho $s1$ từ dp1 và $s2$ từ dp2
+ * thỏa mãn điều kiện tích số để cập nhật kết quả $max(s1 \times s2 \times w)$.
+ * =============================================================================
+
+#include<bits/stdc++.h>
+#define task "main"
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+#define endl '\n'
+#define int long long
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 1e18
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+#define ordered_set tree<int, null_type,less<int>, rb_tree_tag,tree_order_statistics_node_update>
+#define __lcm(a,b) (1ll * ((a) / __gcd((a), (b))) * (b))
+using namespace std;
+//using namespace __gnu_pbds;
+const int maxn = 1e6 + 5;
+const int S = 32000;
+vector <vector <int>> dp1, dp2;
+vector <ii> g[maxn], rg[maxn];
+int n, m, p[maxn];
+
+// dp1[u][s]: tồn tại hay ko đường đi từ 1 đến u có tích = s
+// dp2[v][s]: giới hạn max từ 1 đến v sao cho tồn tại đường đi từ v đến n có tích = s.
+
+void bfs(int st) {
+    queue <ii> q;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j <= S; j++) {
+            dp1[i][j] = 0;
+        }
+    }
+
+    dp1[st][1] = 1;
+    q.push({st, 1});
+
+    while(!q.empty()) {
+        int u = q.front().fi, s = q.front().se;
+        q.pop();
+
+        for (auto e : g[u]) {
+            int v = e.fi, w = e.se;
+            if (s * w <= min(p[v], S) && !dp1[v][s * w]) {
+                dp1[v][s * w] = 1;
+                q.push({v, s * w});
+            }
+        }
+    }
+}
+
+void djk(int st, vector <iii> &ed) {
+    priority_queue <iii> q;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 0; j <= S; j++) {
+            dp2[i][j] = 0;
+        }
+    }
+
+    for (int i = 1; i <= n; i++) rg[i].clear();
+    for (auto e : ed) {
+        int l = e.fi, r = e.se.fi, w = e.se.se;
+//        cout << r << " " << l << " " << w << endl;
+        rg[r].pb({l, w});
+    }
+
+    dp2[n][1] = p[n];
+    q.push({p[n], {n, 1}});
+
+    while(!q.empty()) {
+        int cost = q.top().fi, u = q.top().se.fi, s = q.top().se.se;
+        q.pop();
+
+        for (auto e : rg[u]) {
+            int v = e.fi, w = e.se;
+            if (s * w <= min(p[v], S) && dp2[v][s * w] < min(p[v], dp2[u][s] / w)) {
+                dp2[v][s * w] = min(p[v], dp2[u][s] / w);
+                q.push({dp2[v][s * w], {v, s * w}});
+            }
+        }
+    }
+}
+
+
+void solve() {
+    cin >> n >> m;
+    dp1.resize(n + 2, vector <int> (S + 2));
+    dp2.resize(n + 2, vector <int> (S + 2));
+
+    for (int i = 1; i <= n; i++) {
+        cin >> p[i];
+//        cout << p[i] << " ";
+        g[i].clear();
+    }
+
+    vector <iii> ed;
+    for (int i = 1; i <= m; i++) {
+        int l, r, w; cin >> l >> r >> w;
+        g[l].pb({r, w});
+        ed.pb({l, {r, w}});
+    }
+
+    bfs(1);
+    djk(n, ed);
+
+  //  cout << dp1[2][24] << endl;
+
+
+
+    int maxi = -1;
+    for (auto e : ed) {
+        int u = e.fi, v = e.se.fi, w = e.se.se;
+        for (int s = 1; s <= S; s++) {
+          //  cout << dp2[v][s] << endl;
+            for (int s2 = min(S, dp2[v][s] / w); s2 >= 1; s2--) {
+                if (dp1[u][s2]) {
+                    maxi = max(maxi, s2 * s * w);
+                    break;
+                }
+            }
+        }
+    }
+    cout << maxi << endl;
+
+}
+
+main() {
+    ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int t = 1; cin >> t;
+    while(t--) {
+        solve();
+    }
+}
+ 

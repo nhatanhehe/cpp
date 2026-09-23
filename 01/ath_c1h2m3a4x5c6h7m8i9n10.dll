@@ -1,0 +1,217 @@
+/*
+0 l r b: a[i]=min(a[i],b).
+1 l r b: a[i]=max(a[i],b).
+2 l r b: a[i]=a[i]+b;
+3 l r : sum(l->r).
+*/
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const long long INF = 1e18;
+
+struct Node {
+    long long sum;
+    long long max1, max2, cntmax;
+    long long min1, min2, cntmin;
+    long long lazy_add;
+    int sz;
+
+    Node() {
+        sum = 0;
+        max1 = -INF; max2 = -INF; cntmax = 0;
+        min1 = INF; min2 = INF; cntmin = 0;
+        lazy_add = 0;
+        sz = 0;
+    }
+};
+
+Node tree[400005];
+long long a[100005];
+
+void push_up(int v) {
+    Node &p = tree[v], &l = tree[2 * v], &r = tree[2 * v + 1];
+    p.sum = l.sum + r.sum;
+
+    // Merge Max
+    if (l.max1 == r.max1) {
+        p.max1 = l.max1;
+        p.cntmax = l.cntmax + r.cntmax;
+        p.max2 = max(l.max2, r.max2);
+    } else if (l.max1 > r.max1) {
+        p.max1 = l.max1;
+        p.cntmax = l.cntmax;
+        p.max2 = max(l.max2, r.max1);
+    } else {
+        p.max1 = r.max1;
+        p.cntmax = r.cntmax;
+        p.max2 = max(l.max1, r.max2);
+    }
+
+    // Merge Min
+    if (l.min1 == r.min1) {
+        p.min1 = l.min1;
+        p.cntmin = l.cntmin + r.cntmin;
+        p.min2 = min(l.min2, r.min2);
+    } else if (l.min1 < r.min1) {
+        p.min1 = l.min1;
+        p.cntmin = l.cntmin;
+        p.min2 = min(l.min2, r.min1);
+    } else {
+        p.min1 = r.min1;
+        p.cntmin = r.cntmin;
+        p.min2 = min(l.min1, r.min2);
+    }
+}
+
+void push_add(int v, long long val) {
+    tree[v].sum += val * tree[v].sz;
+    tree[v].max1 += val;
+    if (tree[v].max2 != -INF) tree[v].max2 += val;
+    tree[v].min1 += val;
+    if (tree[v].min2 != INF) tree[v].min2 += val;
+    tree[v].lazy_add += val;
+}
+
+void push_chmin(int v, long long val) {
+    if (val >= tree[v].max1) return;
+    tree[v].sum -= tree[v].cntmax * (tree[v].max1 - val);
+    if (tree[v].min1 == tree[v].max1) tree[v].min1 = val;
+    if (tree[v].min2 == tree[v].max1) tree[v].min2 = val;
+    tree[v].max1 = val;
+}
+
+void push_chmax(int v, long long val) {
+    if (val <= tree[v].min1) return;
+    tree[v].sum += tree[v].cntmin * (val - tree[v].min1);
+    if (tree[v].max1 == tree[v].min1) tree[v].max1 = val;
+    if (tree[v].max2 == tree[v].min1) tree[v].max2 = val;
+    tree[v].min1 = val;
+}
+
+void push_down(int v) {
+    // Add tag
+    if (tree[v].lazy_add != 0) {
+        push_add(2 * v, tree[v].lazy_add);
+        push_add(2 * v + 1, tree[v].lazy_add);
+        tree[v].lazy_add = 0;
+    }
+    // Chmin tag
+    push_chmin(2 * v, tree[v].max1);
+    push_chmin(2 * v + 1, tree[v].max1);
+    // Chmax tag
+    push_chmax(2 * v, tree[v].min1);
+    push_chmax(2 * v + 1, tree[v].min1);
+}
+
+void build(int v, int tl, int tr) {
+    tree[v].sz = tr - tl + 1;
+    if (tl == tr) {
+        tree[v].sum = tree[v].max1 = tree[v].min1 = a[tl];
+        tree[v].max2 = -INF;
+        tree[v].min2 = INF;
+        tree[v].cntmax = tree[v].cntmin = 1;
+        return;
+    }
+    int tm = (tl + tr) / 2;
+    build(2 * v, tl, tm);
+    build(2 * v + 1, tm + 1, tr);
+    push_up(v);
+}
+
+void update_add(int v, int tl, int tr, int l, int r, long long val) {
+    if (l > tr || r < tl) return;
+    if (l <= tl && tr <= r) {
+        push_add(v, val);
+        return;
+    }
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    update_add(2 * v, tl, tm, l, r, val);
+    update_add(2 * v + 1, tm + 1, tr, l, r, val);
+    push_up(v);
+}
+
+void update_chmin(int v, int tl, int tr, int l, int r, long long val) {
+    if (l > tr || r < tl || val >= tree[v].max1) return;
+    if (l <= tl && tr <= r && val > tree[v].max2) {
+        push_chmin(v, val);
+        return;
+    }
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    update_chmin(2 * v, tl, tm, l, r, val);
+    update_chmin(2 * v + 1, tm + 1, tr, l, r, val);
+    push_up(v);
+}
+
+void update_chmax(int v, int tl, int tr, int l, int r, long long val) {
+    if (l > tr || r < tl || val <= tree[v].min1) return;
+    if (l <= tl && tr <= r && val < tree[v].min2) {
+        push_chmax(v, val);
+        return;
+    }
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    update_chmax(2 * v, tl, tm, l, r, val);
+    update_chmax(2 * v + 1, tm + 1, tr, l, r, val);
+    push_up(v);
+}
+
+long long query_sum(int v, int tl, int tr, int l, int r) {
+    if (l > tr || r < tl) return 0;
+    if (l <= tl && tr <= r) return tree[v].sum;
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    return query_sum(2 * v, tl, tm, l, r) + query_sum(2 * v + 1, tm + 1, tr, l, r);
+}
+
+long long query_max(int v, int tl, int tr, int l, int r) {
+    if (l > tr || r < tl) return -INF;
+    if (l <= tl && tr <= r) return tree[v].max1;
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    return max(query_max(2 * v, tl, tm, l, r), query_max(2 * v + 1, tm + 1, tr, l, r));
+}
+
+long long query_min(int v, int tl, int tr, int l, int r) {
+    if (l > tr || r < tl) return INF;
+    if (l <= tl && tr <= r) return tree[v].min1;
+    push_down(v);
+    int tm = (tl + tr) / 2;
+    return min(query_min(2 * v, tl, tm, l, r), query_min(2 * v + 1, tm + 1, tr, l, r));
+}
+
+int main() {
+    ios::sync_with_stdio(false); cin.tie(0);
+    int n, q;
+    cin >> n >> q;
+    for (int i = 0; i < n; i++) cin >> a[i];
+
+    build(1, 0, n - 1);
+
+    while (q--) {
+        int type, l, r;
+        long long b;
+        cin >> type >> l >> r;
+        if (type == 0) { // chmin
+            cin >> b;
+            update_chmin(1, 0, n - 1, l, r - 1, b);
+        } else if (type == 1) { // chmax
+            cin >> b;
+            update_chmax(1, 0, n - 1, l, r - 1, b);
+        } else if (type == 2) { // add
+            cin >> b;
+            update_add(1, 0, n - 1, l, r - 1, b);
+        } else if (type == 3) { // sum
+            cout << query_sum(1, 0, n - 1, l, r - 1) << "\n";
+        } else if (type == 4) { // Get Max (Extra)
+            cout << query_max(1, 0, n - 1, l, r - 1) << "\n";
+        } else if (type == 5) { // Get Min (Extra)
+            cout << query_min(1, 0, n - 1, l, r - 1) << "\n";
+        }
+    }
+    return 0;
+}

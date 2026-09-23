@@ -1,0 +1,149 @@
+/*
+ * TÓM TẮT ĐỀ BÀI:
+ * - Cho một thành phố có cấu trúc là một cây gồm N giao lộ (nút) và N-1 con đường.
+ * - Một bộ các "đèn hiệu" (beacons) được dùng để định danh các giao lộ. Một giao lộ
+ * được định danh duy nhất nếu bộ khoảng cách từ nó tới tất cả các đèn hiệu là duy nhất.
+ * - Đã có sẵn K đèn hiệu tại các vị trí cho trước.
+ * - Yêu cầu: Tìm số lượng đèn hiệu tối thiểu cần lắp thêm để tất cả các giao lộ đều
+ * được định danh duy nhất.
+ *
+ * GIẢI THUẬT (Metric Dimension trên cây):
+ * 1. Định nghĩa:
+ * - Nút bậc cao (Major vertex): Nút có bậc deg(v) >= 3.
+ * - Nhánh lá (Leg): Một đường đi bắt đầu từ một lá, đi qua các nút bậc 2 và kết thúc
+ * tại một nút bậc cao.
+ * 2. Quy tắc cốt lõi:
+ * - Với mỗi nút bậc cao có L nhánh lá gắn vào, ta cần ít nhất (L - 1) nhánh phải có
+ * ít nhất một đèn hiệu.
+ * 3. Các bước thực hiện:
+ * - Bước 1: Tính bậc của các nút và đánh dấu các nút đã có đèn hiệu.
+ * - Bước 2: Từ mỗi lá, đi ngược lên để tìm nút bậc cao mà nó thuộc về. Trong quá trình
+ * di chuyển, kiểm tra xem trên nhánh đó đã có đèn hiệu nào chưa.
+ * - Bước 3: Với mỗi nút bậc cao, đếm tổng số nhánh lá (L) và số nhánh lá đã có đèn (S).
+ * Số đèn cần thêm cho nút đó là: max(0, (L - 1) - S).
+ * - Bước 4: Xử lý trường hợp đặc biệt nếu cây là đường thẳng (không có nút bậc >= 3):
+ * Cần ít nhất 1 đèn ở nút lá hoặc 2 đèn bất kỳ.
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstdio>
+
+using namespace std;
+
+const int MAXN = 200005;
+vector<int> adj[MAXN];
+int deg[MAXN];
+bool is_light[MAXN];
+int L[MAXN]; // Tổng số nhánh lá của nút bậc cao i
+int S[MAXN]; // Số nhánh lá đã có sẵn đèn hiệu của nút bậc cao i
+
+void solve() {
+    int n, k;
+    if (!(cin >> n >> k)) return;
+
+    // Đánh dấu vị trí đèn hiệu đã có
+    for (int i = 0; i < k; ++i) {
+        int b;
+        cin >> b;
+        is_light[b] = true;
+    }
+
+    // Trường hợp đặc biệt cây chỉ có 1 nút
+    if (n == 1) {
+        cout << (is_light[1] ? 0 : 1) << endl;
+        return;
+    }
+
+    // Nhập các cạnh và tính bậc
+    for (int i = 0; i < n - 1; ++i) {
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+        deg[u]++;
+        deg[v]++;
+    }
+
+    // Duyệt từ các lá để xác định cấu trúc các nhánh
+    for (int i = 1; i <= n; ++i) {
+        if (deg[i] == 1) {
+            int curr = i;
+            int prev = -1;
+            bool found_light = is_light[i];
+
+            // Di chuyển dọc theo "nhánh lá" cho đến khi gặp nút bậc >= 3
+            while (true) {
+                int next_node = -1;
+                for (int neighbor : adj[curr]) {
+                    if (neighbor != prev) {
+                        next_node = neighbor;
+                        break;
+                    }
+                }
+
+                // Nếu chạm tới nút bậc cao (Major Vertex)
+                if (next_node == -1 || deg[next_node] > 2) {
+                    if (next_node != -1 && deg[next_node] > 2) {
+                        L[next_node]++;
+                        if (found_light) S[next_node]++;
+                    }
+                    break;
+                }
+
+                // Tiếp tục đi trên nhánh (đây là các nút bậc 2)
+                prev = curr;
+                curr = next_node;
+                if (is_light[curr]) found_light = true;
+            }
+        }
+    }
+
+    long long total_added = 0;
+    bool has_major_node = false;
+
+    // Tính toán số đèn cần thêm dựa trên từng nút bậc cao
+    for (int i = 1; i <= n; ++i) {
+        if (deg[i] > 2) {
+            has_major_node = true;
+            total_added += max(0, (L[i] - 1) - S[i]);
+        }
+    }
+
+    // Xử lý trường hợp cây là đường thẳng (Path Graph)
+    if (!has_major_node) {
+        if (k == 0) {
+            total_added = 1; // Cần ít nhất 1 đèn ở 1 đầu lá
+        } else if (k == 1) {
+            // Nếu có 1 đèn nhưng không nằm ở lá, vẫn cần thêm 1 đèn ở lá
+            bool light_at_leaf = false;
+            for (int i = 1; i <= n; ++i) {
+                if (is_light[i] && deg[i] == 1) light_at_leaf = true;
+            }
+            if (!light_at_leaf) total_added = 1;
+        }
+    } else {
+        // Trường hợp cây có nút bậc cao nhưng kết quả tổng vẫn bằng 0
+        // (xảy ra khi K đã đủ lớn và các đèn đặt ở các vị trí chiến lược)
+        if (total_added == 0 && k == 0) total_added = 1;
+    }
+
+    cout << total_added << endl;
+}
+
+int main() {
+    // Thiết lập đọc ghi file
+    if (fopen("IDTREE.INP", "r")) {
+        freopen("IDTREE.INP", "r", stdin);
+        freopen("IDTREE.OUT", "w", stdout);
+    }
+
+    // Tối ưu nhập xuất
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    solve();
+
+    return 0;
+}

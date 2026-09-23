@@ -1,0 +1,132 @@
+/*
+1: them x vao tap s
+2: xoa 1 x ra khoi tap s
+3: xor tat ca tap s voi x.
+4: Truy vấn tổng k số nhỏ nhất
+*/
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+const int MAX_BIT = 17; // Vì x <= 10^5 < 2^17
+const int MAX_NODES = 100005 * 20;
+
+struct Node {
+    int child[2];
+    int cnt;
+    int bit_cnt[18]; // Lưu số lượng bit 1 ở từng vị trí để tính tổng nhanh
+
+    Node() {
+        child[0] = child[1] = 0;
+        cnt = 0;
+        for (int i = 0; i <= MAX_BIT; i++) bit_cnt[i] = 0;
+    }
+};
+
+Node trie[MAX_NODES];
+int node_count = 1;
+
+// Thêm hoặc xóa một số v vào Trie
+void update(int v, int delta) {
+    int u = 1;
+    for (int i = MAX_BIT; i >= 0; i--) {
+        int bit = (v >> i) & 1;
+        if (!trie[u].child[bit]) trie[u].child[bit] = ++node_count;
+        u = trie[u].child[bit];
+
+        trie[u].cnt += delta;
+        for (int j = 0; j <= MAX_BIT; j++) {
+            if ((v >> j) & 1) trie[u].bit_cnt[j] += delta;
+        }
+    }
+}
+
+// Kiểm tra số v có tồn tại trong Trie không (để thực hiện lệnh xóa)
+int count_val(int v) {
+    int u = 1;
+    for (int i = MAX_BIT; i >= 0; i--) {
+        int bit = (v >> i) & 1;
+        if (!trie[u].child[bit]) return 0;
+        u = trie[u].child[bit];
+    }
+    return trie[u].cnt;
+}
+
+// Tính tổng các giá trị trong một nhánh sau khi áp dụng global_xor
+long long get_subtree_sum(int u, int g_xor) {
+    if (!u || trie[u].cnt == 0) return 0;
+    long long res = 0;
+    for (int i = 0; i <= MAX_BIT; i++) {
+        int count_ones = trie[u].bit_cnt[i];
+        // Nếu bit thứ i của global_xor là 1, số bit 1 hiện tại sẽ là (tổng số - số bit 1 ban đầu)
+        if ((g_xor >> i) & 1) {
+            res += (long long)(trie[u].cnt - count_ones) << i;
+        } else {
+            res += (long long)count_ones << i;
+        }
+    }
+    return res;
+}
+
+// Truy vấn tổng k số nhỏ nhất
+long long query_k_smallest(int k, int g_xor) {
+    if (k <= 0) return 0;
+    int u = 1;
+    long long total_sum = 0;
+
+    for (int i = MAX_BIT; i >= 0; i--) {
+        int g_bit = (g_xor >> i) & 1;
+        int left = trie[u].child[g_bit];     // Nhánh thực tế sẽ nhỏ hơn sau XOR
+        int right = trie[u].child[1 - g_bit]; // Nhánh thực tế sẽ lớn hơn sau XOR
+
+        if (trie[left].cnt >= k) {
+            u = left;
+        } else {
+            total_sum += get_subtree_sum(left, g_xor);
+            k -= trie[left].cnt;
+            u = right;
+        }
+        if (!u) break;
+    }
+
+    // Nếu k còn dư khi đã đến lá (các số trùng nhau)
+    if (k > 0 && u > 0) {
+        // Giá trị thực của nút lá này sau XOR
+        // Tìm giá trị gốc v dẫn đến node u
+        // Cách đơn giản: Một số v cụ thể tại lá này sau XOR là:
+        // (v_gốc ^ g_xor). Vì là lá nên tất cả phần tử ở đây đều giống nhau.
+        // Ta có thể tính nhanh bằng cách lấy sum / cnt
+        total_sum += (get_subtree_sum(u, g_xor) / trie[u].cnt) * k;
+    }
+
+    return total_sum;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int Q;
+    cin >> Q;
+    int global_xor = 0;
+
+    while (Q--) {
+        int type, val;
+        cin >> type >> val;
+        if (type == 0) {
+            update(val ^ global_xor, 1);
+        } else if (type == 1) {
+            int target = val ^ global_xor;
+            if (count_val(target) > 0) {
+                update(target, -1);
+            }
+        } else if (type == 2) {
+            global_xor ^= val;
+        } else if (type == 3) {
+            cout << query_k_smallest(val, global_xor) << "\n";
+        }
+    }
+
+    return 0;
+}

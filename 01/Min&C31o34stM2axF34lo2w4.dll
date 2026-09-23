@@ -1,0 +1,122 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define ll long long
+const ll INF = 1e18;
+
+struct MinCostFlow {
+    int n, s, t;
+    ll need;
+    ll ans;
+
+    vector<vector<int>> g;
+    vector<vector<ll>> cap, flow, cost;
+    vector<ll> dist;
+    vector<int> tr, inq;
+
+    MinCostFlow(int n = 0) {
+        init(n);
+    }
+
+    void init(int n_) {
+        n = n_;
+        g.assign(n + 1, {});
+        cap.assign(n + 1, vector<ll>(n + 1, 0));
+        flow.assign(n + 1, vector<ll>(n + 1, 0));
+        cost.assign(n + 1, vector<ll>(n + 1, 0));
+        dist.resize(n + 1);
+        tr.resize(n + 1);
+        inq.resize(n + 1);
+        ans = 0;
+    }
+
+    void add_edge(int u, int v, ll c, ll w) {
+        cap[u][v] = cap[v][u] = c;
+        cost[u][v] = cost[v][u] = w;
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+
+    bool spfa() {
+        fill(dist.begin(), dist.end(), INF);
+        fill(tr.begin(), tr.end(), 0);
+        fill(inq.begin(), inq.end(), 0);
+
+        queue<int> q;
+        q.push(s);
+        dist[s] = 0;
+        inq[s] = 1;
+
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            inq[u] = 0;
+            for (int v : g[u]) {
+                if (flow[u][v] < cap[u][v]) {
+                    ll cst = cost[u][v] * (flow[u][v] >= 0 ? 1 : -1);
+                    if (dist[v] > dist[u] + cst) {
+                        dist[v] = dist[u] + cst;
+                        tr[v] = u;
+                        if (!inq[v]) {
+                            inq[v] = 1;
+                            q.push(v);
+                        }
+                    }
+                }
+            }
+        }
+        return dist[t] < INF;
+    }
+
+    void augment() {
+        ll delta = INF;
+        for (int v = t; v != s; v = tr[v]) {
+            int u = tr[v];
+            if (flow[u][v] >= 0)
+                delta = min(delta, cap[u][v] - flow[u][v]);
+            else
+                delta = min(delta, -flow[u][v]);
+        }
+        delta = min(delta, need);
+
+        for (int v = t; v != s; v = tr[v]) {
+            int u = tr[v];
+            flow[u][v] += delta;
+            flow[v][u] -= delta;
+        }
+
+        need -= delta;
+        ans += delta * dist[t];
+    }
+    ll solve(int source, int sink, ll k) {
+        s = source;
+        t = sink;
+        need = k;
+        ans = 0;
+
+        while (need > 0 && spfa())
+            augment();
+
+        if (need > 0) return -1;
+        return ans;
+    }
+};
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int n, m, s, t;
+    ll k;
+    cin >> n >> m >> k >> s >> t;
+
+    MinCostFlow mcf(n);
+
+    for (int i = 1; i <= m; i++) {
+        int u, v;
+        ll w, c;
+        cin >> u >> v >> w >> c;
+        mcf.add_edge(u, v, c, w);
+    }
+
+    cout << mcf.solve(s, t, k);
+    return 0;
+}
+

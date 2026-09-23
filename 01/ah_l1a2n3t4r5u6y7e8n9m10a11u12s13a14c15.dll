@@ -1,0 +1,66 @@
+/* * =============================================================================
+ * TÓM TẮT ĐỀ BÀI: (Bài toán Mạch điện tuyến tính - Image 5)
+ * - Cho một dãy N đoạn dây dẫn với các màu ban đầu là c1, c2, ..., cN.
+ * - Thao tác lan truyền: Một đoạn dây i bất kỳ có thể nhận màu sắc từ đoạn kề trái
+ * hoặc kề phải của nó (ci := ci-1 hoặc ci := ci+1).
+ * - Yêu cầu: Tính số lượng dãy màu khác nhau có thể thu được sau một số lần áp
+ * dụng thao tác trên tùy ý, kết quả lấy modulo 10^9 + 7.
+ * * GIẢI THUẬT:
+ * - Nhận xét: Thao tác lan truyền màu cho phép một màu "mở rộng" vùng ảnh hưởng của nó.
+ * Mọi cấu hình màu có thể thu được thực chất là kết quả của việc chọn một dãy
+ * con các màu từ dãy ban đầu và "kéo giãn" chúng để lấp đầy N vị trí, giữ nguyên
+ * thứ tự xuất hiện tương đối của các màu đã chọn.
+ * - Quy hoạch động (DP):
+ * + Gọi dp[i][j] là số lượng cấu hình màu khác nhau có độ dài i, được tạo ra
+ * từ j đoạn dây đầu tiên của dãy ban đầu.
+ * + pos[j]: Lưu vị trí xuất hiện gần nhất trước đó của màu c[j] để tránh đếm trùng
+ * các cấu hình giống nhau (kỹ thuật đếm dãy con phân biệt).
+ * + Trạng thái:
+ * dp[i][j] = dp[i][j] + (dp[i-1][j] - dp[i-1][pos[j]])
+ * (Số cách tạo dãy i phần tử kết thúc bằng màu c[j] bằng cách lấy dãy i-1 phần tử
+ * trước đó cộng thêm màu c[j], trừ đi phần đã được tính bởi lần xuất hiện trước của màu này).
+ * + Prefix Sum: dp[i][j] = dp[i][j] + dp[i][j-1] để tối ưu hóa việc tính toán cho bước i+1.
+ * - Độ phức tạp: Thời gian O(N^2), Không gian O(N^2).
+ * =============================================================================
+ */
+
+#include<bits/stdc++.h>
+#define task "main"
+#define endl '\n'
+using namespace std;
+
+const int maxn = 1e4 + 2;
+int n, c[maxn], pos[maxn], last[maxn], dp[maxn][maxn];
+int mod = 1e9 + 7;
+
+int main() {
+    ios_base::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+
+    if (!(cin >> n)) return 0;
+    for (int i = 1; i <= n; i++) {
+        cin >> c[i];
+        pos[i] = last[c[i]];
+        last[c[i]] = i;
+    }
+
+    // Trường hợp cơ sở: Có 1 cách tạo ra dãy độ dài 0 (dãy rỗng) từ j phần tử đầu tiên
+    for (int i = 0; i <= n; i++) dp[0][i] = 1;
+
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            // Đếm các dãy độ dài i kết thúc bằng màu c[j]
+            // Hiệu số (dp[i-1][j] - dp[i-1][pos[j]]) đảm bảo tính duy nhất của các dãy con
+            dp[i][j] = (dp[i][j] + ((dp[i - 1][j] - dp[i - 1][pos[j]]) % mod + mod) % mod) % mod;
+        }
+        // Biến mảng dp thành mảng cộng dồn để dp[i][j] đại diện cho tổng số cách dùng từ 1..j phần tử
+        for (int j = 1; j <= n; j++) {
+            dp[i][j] = (dp[i][j] + dp[i][j - 1]) % mod;
+        }
+    }
+    cout << dp[n][n];
+    return 0;
+}

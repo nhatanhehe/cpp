@@ -1,0 +1,1 @@
+{"name":"Local: P1848","url":"e:\\cpp\\Lougu\\P1848.cpp","tests":[{"id":1785945972747,"input":"5 10\n5 7\n9 2\n8 5\n13 2\n3 8","output":"21"},{"id":1785948883171,"input":"1 4\n7 4","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\Lougu\\P1848.cpp","group":"local","local":true}

@@ -1,0 +1,91 @@
+struct HLD {
+    int n;
+    int heavy[N], head[N], a[N], h[N], pos[N], cnt, par[N];
+    vector<int> adj[N];
+    int t[N << 2];
+
+    void init(int _n) {
+        n = _n;
+        cnt = 0;
+        for (int i = 1; i <= n; i++) {
+            adj[i].clear();
+            heavy[i] = head[i] = h[i] = pos[i] = par[i] = 0;
+        }
+    }
+
+    void addedge(int u, int v) {
+        adj[u].pb(v);
+        adj[v].pb(u);
+    }
+
+    int dfs(int u, int p) {
+        int mx = 0, sz = 1, child_sz = 0;
+        for (int v : adj[u]) {
+            if (v != p) {
+                h[v] = h[u] + 1;
+                par[v] = u;
+                child_sz = dfs(v, u);
+                if (mx < child_sz) {
+                    mx = child_sz;
+                    heavy[u] = v;
+                }
+                sz += child_sz;
+            }
+        }
+        return sz;
+    }
+
+    void hld(int u, int h_) {
+        head[u] = h_;
+        pos[u] = ++cnt;
+        if (heavy[u]) hld(heavy[u], h_);
+        for (int v : adj[u]) {
+            if (v != par[u] && v != heavy[u]) hld(v, v);
+        }
+    }
+
+    void up(int posi, int k, int id = 1, int l = 1, int r = -1) {
+        if (r == -1) r = n;
+        if (l == r) {
+            t[id] = k;
+            return;
+        }
+        int mid = (l + r) >> 1;
+        if (posi <= mid) up(posi, k, id * 2, l, mid);
+        else up(posi, k, id * 2 + 1, mid + 1, r);
+        t[id] = max(t[id * 2], t[id * 2 + 1]);
+    }
+
+    int get(int u, int v, int id = 1, int l = 1, int r = -1) {
+        if (r == -1) r = n;
+        if (l > v || r < u) return -inf;
+        if (u <= l && r <= v) return t[id];
+        int mid = (l + r) >> 1;
+        return max(get(u, v, id * 2, l, mid),
+                   get(u, v, id * 2 + 1, mid + 1, r));
+    }
+
+    int query_node(int x,int y) {
+        int ans=0;
+        for(;head[x]!=head[y];y=par[head[y]]) {
+            if(h[head[x]]>h[head[y]]) swap(x,y);
+            ans=max(ans,get(pos[head[y]],pos[y]));
+        }
+        if(h[x]>h[y]) swap(x,y);
+        ans=max(ans,get(pos[x],pos[y]));
+        return ans;
+    }
+
+    int query_edge(int x,int y) {
+        int ans=0;
+        for(;head[x]!=head[y];y=par[head[y]]) {
+            if(h[head[x]]>h[head[y]]) swap(x,y);
+            ans=max(ans,get(pos[head[y]],pos[y]));
+        }
+        if(x==y) return ans;
+        if(h[x]>h[y]) swap(x,y);
+        ans=max(ans,get(pos[x]+1,pos[y]));
+        return ans;
+    }
+};
+

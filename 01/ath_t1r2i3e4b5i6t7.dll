@@ -1,0 +1,250 @@
+#include<bits/stdc++.h>
+#define task "main"
+//#include <ext/pb_ds/assoc_container.hpp>
+//#include <ext/pb_ds/tree_policy.hpp>
+#define endl '\n'
+#define int long long
+#define pb push_back
+#define fi first
+#define se second
+#define ii pair<int,int>
+#define iii pair<int,ii>
+#define iv pair<ii, ii>
+#define base 341
+#define MASK(i) (1ll << i)
+#define oo 1e18
+#define isOn(x,i) ((x) & MASK(i))
+#define bitOn(x,i) ((x) | MASK(i))
+#define bitOff(x,i) ((x) & ~MASK(i))
+#define ordered_set tree<int, null_type,less<int>, rb_tree_tag,tree_order_statistics_node_update>
+#define __lcm(a,b) (1ll * ((a) / __gcd((a), (b))) * (b))
+using namespace std;
+//using namespace __gnu_pbds;
+const int maxn = 1e6 + 5;
+
+struct trie{
+    trie *a[2];
+    int cnt = 0, sum = 0, ok = 0;
+    trie(){
+        cnt = 0;
+        sum = 0;
+        ok = 0;
+        for (int i = 0; i < 2; i++) {
+            a[i] = NULL;
+        }
+    }
+};
+trie *root;
+
+// thêm / xóa x
+void Insert(string s, int val, int type) {
+    trie *p = root;
+    for (char c : s) {
+        int bit = c - '0';
+        if (p->a[bit] == NULL) p->a[bit] = new trie();
+        p = p->a[bit];
+        p->cnt += type;
+        p->sum += type * val;
+    }
+    p -> ok += type;
+}
+
+// ktra tồn tại x hay ko.
+bool check(string s) {
+    trie *p = root;
+    for (char x : s) {
+        if (p -> a[x - '0'] == NULL || p -> a[x - '0'] -> cnt <= 0) return false;
+        p = p -> a[x - '0'];
+    }
+    return p -> ok > 0;
+}
+
+
+// Thao tác 4: đếm số xâu có tiền tố là s
+int count_prefix(string s) {
+    trie *p = root;
+    for (char c : s) {
+        int bit = c - '0';
+        if (p->a[bit] == NULL || p->a[bit]->cnt <= 0) return 0;
+        p = p->a[bit];
+    }
+    return p->cnt;
+}
+
+// Thao tác 5: đếm số xâu đúng bằng s
+int count_exact(string s) {
+    trie *p = root;
+    for (char c : s) {
+        int bit = c - '0';
+        if (p->a[bit] == NULL || p->a[bit]->cnt <= 0) return 0;
+        p = p->a[bit];
+    }
+    return p->ok;
+}
+
+// ----------------------------------------------
+
+// tính tổng các số <= x
+int query(int x) {
+    trie *p = root;
+
+    int res = 0;
+    for (int i = 29; i >= 0; i--) {
+        int cur = 0;
+        if (isOn(x, i)) cur = 1;
+
+        if (cur == 1) {
+            if (p -> a[0] != NULL) res += p -> a[0] -> sum;
+            if (p -> a[1] != NULL && p -> a[1] -> cnt > 0) p = p -> a[1];
+            else return res;
+        }
+        else {
+            if (p -> a[0] != NULL && p -> a[0] -> cnt > 0) p = p -> a[0];
+            else return res;
+        }
+    }
+    res += p -> sum;
+    return res;
+}
+// Tinh tong cac so >= l va <= r
+
+int query_sum_lr(int l, int r) {
+     if (l - 1 < 0) return query(r);
+    else return query(r) - query(l - 1);
+}
+
+// tính tổng k thằng nhỏ nhất
+long long query_k_sum(trie *p, int bit, long long k) {
+    if (!p || k <= 0) return 0;
+    if (k == p->cnt) return p->sum;
+
+    if (bit < 0) {
+        return (p->sum / p->cnt) * k;
+    }
+
+    long long left_cnt = (p->a[0] != NULL) ? p->a[0]->cnt : 0;
+
+    if (k <= left_cnt) {
+        return query_k_sum(p->a[0], bit - 1, k);
+    } else {
+        long long res = (p->a[0] != NULL) ? p->a[0]->sum : 0;
+        return res + query_k_sum(p->a[1], bit - 1, k - left_cnt);
+    }
+}
+
+
+// tìm phần tử nhỏ thứ k
+int find_kth(int k) {
+    trie *p = root;
+    int res = 0;
+    for (int i = 29; i >= 0; i--) {
+        int left_cnt = 0;
+        if (p -> a[0] != NULL) left_cnt = p -> a[0] -> cnt;
+        if (k <= left_cnt) {
+            p = p -> a[0];
+        }
+        else {
+            k -= left_cnt;
+            res += (1ll << i);
+            if (p->a[1] == NULL) return -1;
+            p = p->a[1];
+        }
+
+    }
+    return res;
+}
+
+// Max xor
+int Max_xor(int x) {
+    trie *p = root;
+    int res = 0;
+    for (int i = 29; i >= 0; i--) {
+        int cur = 0;
+        if (isOn(x, i)) cur = 1;
+
+        if (p -> a[cur ^ 1] != NULL && p -> a[cur ^ 1] -> cnt > 0) {
+            res += (1ll << i);
+            p = p -> a[cur ^ 1];
+        }
+        else p = p -> a[cur];
+    }
+    return res;
+}
+
+// Thao tác: Đếm số lượng số trong tập S có giá trị <= x
+int count_le(string s) {
+    trie *p = root;
+    int res = 0;
+    for (char c : s) {
+        if (p == NULL) break;
+        int bit = c - '0';
+
+        if (bit == 1) {
+            if (p->a[0] != NULL) res += p->a[0]->cnt;
+            p = p->a[1];
+        } else {
+
+            p = p->a[0];
+        }
+    }
+    if (p != NULL) res += p->ok;
+    return res;
+}
+string chuyen(int x) {
+    string s = "";
+    for (int i = 29; i >= 0; i--) {
+        if (isOn(x, i)) s += "1";
+        else s += "0";
+    }
+    return s;
+}
+
+
+main() {
+    ios_base::sync_with_stdio(0);cin.tie(0);cout.tie(0);
+    if(fopen(task".inp","r")) {
+        freopen(task".inp","r",stdin);
+        freopen(task".out","w",stdout);
+    }
+    int q = 1; cin >> q;
+
+    root = new trie();
+    while(q--) {
+        int type; cin >> type;
+
+        if (type == 1) { // Thêm xâu s
+            int x; cin >> x;
+            string s = chuyen(x);
+            Insert(s, x, 1);
+        }
+        else if (type == 2) { // Xóa xâu s
+             int x; cin >> x;
+            string s = chuyen(x);
+            if (check(s)) {
+                Insert(s, x, -1);
+            }
+        }
+        else if (type == 5) {
+             int l, r; cin >> l >> r;
+             cout << query_sum_lr(l, r) << endl;
+        }
+        else if (type == 3) { // In ra phan tu be thu k
+            int k; cin >> k;
+            cout << find_kth(k) << endl;
+        }
+        else if (type == 4) { // tim max xor x
+            int x; cin >> x;
+            cout << Max_xor(x) << endl;
+        }
+        else if (type == 6) {
+            int k; cin >> k;
+            cout << query_k_sum(root, 29, k) << endl;
+        }
+        else {
+            int x; cin >> x;
+            x--;
+            string s = chuyen(x);
+            cout << count_le(s) << endl;
+        }
+    }
+}

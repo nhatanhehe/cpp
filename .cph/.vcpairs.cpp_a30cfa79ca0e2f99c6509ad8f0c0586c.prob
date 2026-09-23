@@ -1,0 +1,1 @@
+{"name":"Local: vcpairs","url":"e:\\cpp\\vcpairs.cpp","tests":[{"id":1777106760279,"input":"4 4\n1 2 1 2\n1 2\n3 4\n1 3\n2 3\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\vcpairs.cpp","group":"local","local":true}

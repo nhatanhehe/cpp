@@ -1,0 +1,111 @@
+#include<bits/stdc++.h>
+#define int long long
+#define ii pair<int,int>
+#define fi first
+#define se second
+#define task "STREETFOOD"
+using namespace std;
+
+const int N = 1e6 + 5, mod = 1e9 + 7;
+const int oo = 1e18;
+int n, a[N], ans;
+map<string, int> mp;
+int m;
+
+int id(string &s)
+{
+    if(mp.count(s) == 0) mp[s] = ++m;
+    return mp[s];
+}
+
+namespace sub5
+{
+    int cnt[55];
+    void solve()
+    {
+        ans = n;
+        for(int i = 1; i <= n; i++)
+        {
+            vector<int> v;
+            for(int j = 1; j <= 50; j++)
+                cnt[j] = 0;
+            int dem = 0;
+            for(int j = i; j <= n; j++)
+            {
+                cnt[a[j]]++;
+                if(cnt[a[j]] == 1)
+                {
+                    dem++;
+                    vector<int> pos_st;
+                    for(int k = j + 1; k <= n; k++)
+                    {
+                        if(cnt[a[k]] == 0)
+                        {
+                            pos_st.push_back(k);
+                        }
+                    }
+                    int k = j, z = j - 1;
+                    for(int st : pos_st)
+                    {
+//                        cout << i << ' ' << j << ' ' << st << '\n';
+                        while(z < st)
+                        {
+                            z++;
+                            cnt[a[z]]++;
+                            if(cnt[a[z]] == 1)
+                                dem++;
+                        }
+                        while(k < st)
+                        {
+                            cnt[a[k]]--;
+                            if(cnt[a[k]] == 0)
+                                dem--;
+                            k++;
+                        }
+                        while(dem < m && z < n)
+                        {
+                            z++;
+                            cnt[a[z]]++;
+                            if(cnt[a[z]] == 1)
+                                dem++;
+                        }
+                        while(dem == m && k <= z && cnt[a[k]] > 1)
+                        {
+                            cnt[a[k]]--;
+                            k++;
+                        }
+//                        cout << i << ' ' << j << ' ' << k << ' ' << z << ' ' << dem << '\n';
+                        if(dem == m)
+                            ans = min(ans, j - i + 1 + z - k + 1);
+                    }
+                    while(k <= z)
+                    {
+                        cnt[a[k]]--;
+                        if(cnt[a[k]] == 0)
+                            dem--;
+                        k++;
+                    }
+                }
+            }
+        }
+        cout << ans;
+    }
+}
+main()
+{
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);
+    cout.tie(0);
+    if(fopen(task ".inp", "r"))
+    {
+        freopen(task ".inp", "r", stdin);
+        freopen(task ".out", "w", stdout);
+    }
+    cin >> n;
+    for(int i = 1; i <= n; i++)
+    {
+        string s; cin >> s;
+        a[i] = id(s);
+    }
+    sub5::solve();
+}

@@ -1,0 +1,1 @@
+{"name":"Local: prepareproblems","url":"e:\\cpp\\prepareproblems.cpp","tests":[{"id":1786541731570,"input":"4 4\n5 2 4 1","output":""},{"id":1786541890135,"input":"3 20\n199 41 299","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\prepareproblems.cpp","group":"local","local":true}

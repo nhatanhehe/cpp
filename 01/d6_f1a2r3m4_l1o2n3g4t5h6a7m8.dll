@@ -1,0 +1,100 @@
+/*
+TASK: FARM (Phân bổ ruộng đất)
+Tóm tắt đề: 
+- Chia dãy n phần tử thành k đoạn liên tiếp.
+- Mỗi đoạn có tổng > 0.
+- Tổng đoạn sau >= tổng đoạn trước.
+- Tìm k cực đại.
+
+Giải pháp:
+- Gọi dp[i] là số đoạn tối đa chia được đến i, L[i] là tổng đoạn cuối nhỏ nhất tương ứng.
+- Điều kiện chia: S[i] - S[j] >= L[j]  => S[i] >= S[j] + L[j].
+- Đặt V[j] = S[j] + L[j]. Tìm j < i sao cho V[j] <= S[i] để max(dp[j]).
+- Sử dụng Fenwick Tree (BIT) để quản lý các giá trị V[j] và truy vấn max dp.
+- Độ phức tạp: O(n log(giá trị)).
+*/
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int OFFSET = 100005; // Để xử lý số âm trong BIT
+const int MAX_BIT = 400005; // Range của S[i] + L[i] có thể lên tới 3*10^5
+
+struct Node {
+    int dp;
+    long long maxS;
+
+    Node() : dp(-1), maxS(-2e18) {}
+    Node(int d, long long s) : dp(d), maxS(s) {}
+
+    // So sánh để chọn trạng thái tốt hơn: dp lớn hơn, hoặc dp bằng nhau thì S lớn hơn (để L nhỏ hơn)
+    bool operator>(const Node& other) const {
+        if (dp != other.dp) return dp > other.dp;
+        return maxS > other.maxS;
+    }
+};
+
+Node bit[MAX_BIT];
+
+void update(int idx, Node val) {
+    for (; idx < MAX_BIT; idx += idx & -idx) {
+        if (val > bit[idx]) bit[idx] = val;
+    }
+}
+
+Node query(int idx) {
+    Node res;
+    for (; idx > 0; idx -= idx & -idx) {
+        if (bit[idx] > res) res = bit[idx];
+    }
+    return res;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    // Mở file (nếu cần theo yêu cầu đề bài)
+    // freopen("FARM.INP", "r", stdin);
+    // freopen("FARM.OUT", "w", stdout);
+
+    int n;
+    if (!(cin >> n)) return 0;
+
+    vector<long long> a(n + 1);
+    vector<long long> s(n + 1, 0);
+    for (int i = 1; i <= n; i++) {
+        cin >> a[i];
+        s[i] = s[i - 1] + a[i];
+    }
+
+    // Khởi tạo: Tại vị trí 0, chưa có đoạn nào (dp=0), tổng đoạn trước coi như bằng 0 (L=0)
+    // V[0] = S[0] + L[0] = 0 + 0 = 0.
+    update(0 + OFFSET, Node(0, 0));
+
+    int final_ans = 0;
+    for (int i = 1; i <= n; i++) {
+        // Truy vấn j sao cho V[j] <= S[i]
+        Node best = query(s[i] + OFFSET);
+
+        if (best.dp != -1) {
+            // Kiểm tra điều kiện tổng dương cho đoạn đầu tiên (khi best.dp = 0)
+            if (best.dp == 0 && s[i] <= 0) continue;
+
+            int current_dp = best.dp + 1;
+            long long current_L = s[i] - best.maxS;
+            
+            if (i == n) final_ans = current_dp;
+
+            // Cập nhật V[i] = S[i] + L[i] vào BIT
+            update(s[i] + current_L + OFFSET, Node(current_dp, s[i]));
+        }
+    }
+
+    cout << final_ans << endl;
+
+    return 0;
+}

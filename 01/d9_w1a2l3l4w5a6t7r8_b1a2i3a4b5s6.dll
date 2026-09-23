@@ -1,0 +1,176 @@
+/**
+ * ĐỀ BÀI: Hệ Thống Tường Chắn Nước
+ * - Truy vấn 1: Tính nước đọng trong đoạn [l, r] (giả định các tường ngoài [l, r] mất đi).
+ * - Truy vấn 2: Cập nhật độ cao h[i] = h[i] - w (vĩnh viễn).
+ * * GIẢI THUẬT:
+ * 1. Sử dụng Segment Tree để quản lý độ cao các cột tường.
+ * 2. Để tính nước trong [l, r], tìm vị trí M có h[M] cao nhất trong [l, r].
+ * 3. Lượng nước = (Tổng PrefixMax từ l -> M) + (Tổng SuffixMax từ M -> r) - h[M] - SumH(l, r).
+ * 4. Kỹ thuật Segment Tree: Mỗi nút lưu mx, sumH, và các giá trị hỗ trợ tính tổng 
+ * Prefix/Suffix Max trong O(log^2 N).
+ */
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int MAXN = 200005;
+long long h[MAXN];
+int n, q;
+
+struct Node {
+    long long mx;
+    int mxIdx;
+    long long sumH;
+    long long sumPre; // Tổng prefix max nội bộ của nút
+    long long sumSuf; // Tổng suffix max nội bộ của nút
+} tree[4 * MAXN];
+
+// Tính tổng prefix max của nút p nếu có giá trị v truyền từ bên trái vào
+long long calc_pre(int p, int L, int R, long long v) {
+    if (L == R) return max(v, tree[p].mx);
+    int mid = (L + R) / 2;
+    if (tree[p << 1].mx <= v) {
+        // Toàn bộ con trái bị v bao phủ
+        return v * (mid - L + 1) + calc_pre(p << 1 | 1, mid + 1, R, v);
+    } else {
+        // Con trái không bị bao phủ hoàn toàn, con phải giữ nguyên đóng góp từ con trái
+        return calc_pre(p << 1, L, mid, v) + (tree[p].sumPre - tree[p << 1].sumPre);
+    }
+}
+
+// Tính tổng suffix max của nút p nếu có giá trị v truyền từ bên phải vào
+long long calc_suf(int p, int L, int R, long long v) {
+    if (L == R) return max(v, tree[p].mx);
+    int mid = (L + R) / 2;
+    if (tree[p << 1 | 1].mx <= v) {
+        return v * (R - mid) + calc_suf(p << 1, L, mid, v);
+    } else {
+        return calc_suf(p << 1 | 1, mid + 1, R, v) + (tree[p].sumSuf - tree[p << 1 | 1].sumSuf);
+    }
+}
+
+void push_up(int p, int L, int R) {
+    int mid = (L + R) / 2;
+    tree[p].sumH = tree[p << 1].sumH + tree[p << 1 | 1].sumH;
+    
+    if (tree[p << 1].mx >= tree[p << 1 | 1].mx) {
+        tree[p].mx = tree[p << 1].mx;
+        tree[p].mxIdx = tree[p << 1].mxIdx;
+    } else {
+        tree[p].mx = tree[p << 1 | 1].mx;
+        tree[p].mxIdx = tree[p << 1 | 1].mxIdx;
+    }
+    
+    tree[p].sumPre = tree[p << 1].sumPre + calc_pre(p << 1 | 1, mid + 1, R, tree[p << 1].mx);
+    tree[p].sumSuf = tree[p << 1 | 1].sumSuf + calc_suf(p << 1, L, mid, tree[p << 1 | 1].mx);
+}
+
+void build(int p, int L, int R) {
+    if (L == R) {
+        tree[p] = {h[L], L, h[L], h[L], h[L]};
+        return;
+    }
+    int mid = (L + R) / 2;
+    build(p << 1, L, mid);
+    build(p << 1 | 1, mid + 1, R);
+    push_up(p, L, R);
+}
+
+void update(int p, int L, int R, int idx, long long val) {
+    if (L == R) {
+        h[L] = val;
+        tree[p] = {h[L], L, h[L], h[L], h[L]};
+        return;
+    }
+    int mid = (L + R) / 2;
+    if (idx <= mid) update(p << 1, L, mid, idx, val);
+    else update(p << 1 | 1, mid + 1, R, idx, val);
+    push_up(p, L, R);
+}
+
+// Tìm giá trị max và vị trí max trong đoạn [l, r]
+pair<long long, int> query_max(int p, int L, int R, int l, int r) {
+    if (l <= L && R <= r) return {tree[p].mx, tree[p].mxIdx};
+    int mid = (L + R) / 2;
+    if (r <= mid) return query_max(p << 1, L, mid, l, r);
+    if (l > mid) return query_max(p << 1 | 1, mid + 1, R, l, r);
+    return max(query_max(p << 1, L, mid, l, r), query_max(p << 1 | 1, mid + 1, R, l, r));
+}
+
+// Lấy tổng h[i] trong đoạn [l, r]
+long long query_sumH(int p, int L, int R, int l, int r) {
+    if (l <= L && R <= r) return tree[p].sumH;
+    int mid = (L + R) / 2;
+    long long res = 0;
+    if (l <= mid) res += query_sumH(p << 1, L, mid, l, r);
+    if (r > mid) res += query_sumH(p << 1 | 1, mid + 1, R, l, r);
+    return res;
+}
+
+// Lấy danh sách các nút Segment Tree bao phủ đoạn [l, r]
+void get_nodes(int p, int L, int R, int l, int r, vector<int>& nodes, vector<pair<int, int>>& ranges) {
+    if (l > r) return;
+    if (l <= L && R <= r) {
+        nodes.push_back(p);
+        ranges.push_back({L, R});
+        return;
+    }
+    int mid = (L + R) / 2;
+    if (l <= mid) get_nodes(p << 1, L, mid, l, r, nodes, ranges);
+    if (r > mid) get_nodes(p << 1 | 1, mid + 1, R, l, r, nodes, ranges);
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    if (cin >> n >> q) {
+        for (int i = 1; i <= n; i++) cin >> h[i];
+        build(1, 1, n);
+
+        while (q--) {
+            int type;
+            cin >> type;
+            if (type == 1) {
+                int l, r;
+                cin >> l >> r;
+                auto resMax = query_max(1, 1, n, l, r);
+                int M = resMax.second;
+
+                // Tính tổng prefix max từ l đến M
+                vector<int> nodes;
+                vector<pair<int, int>> ranges;
+                get_nodes(1, 1, n, l, M, nodes, ranges);
+                long long totalPre = 0, curMax = -1;
+                for (int i = 0; i < nodes.size(); i++) {
+                    totalPre += calc_pre(nodes[i], ranges[i].first, ranges[i].second, curMax);
+                    curMax = max(curMax, tree[nodes[i]].mx);
+                }
+
+                // Tính tổng suffix max từ M đến r
+                nodes.clear(); ranges.clear();
+                get_nodes(1, 1, n, M, r, nodes, ranges);
+                long long totalSuf = 0; curMax = -1;
+                for (int i = nodes.size() - 1; i >= 0; i--) {
+                    totalSuf += calc_suf(nodes[i], ranges[i].first, ranges[i].second, curMax);
+                    curMax = max(curMax, tree[nodes[i]].mx);
+                }
+
+                long long totalSumH = query_sumH(1, 1, n, l, r);
+                // Kết quả = (Diện tích dưới đường nước) - (Diện tích tường)
+                // h[M] bị lặp trong cả totalPre và totalSuf nên trừ đi 1 lần
+                cout << (totalPre + totalSuf - h[M]) - totalSumH << "\n";
+
+            } else {
+                int i; long long w;
+                cin >> i >> w;
+                update(1, 1, n, i, h[i] - w);
+            }
+        }
+    }
+
+    return 0;
+}

@@ -1,0 +1,123 @@
+/*
+================================================================================
+TÓM TẮT ĐỀ BÀI:
+- Cho một mạng lưới liên lạc dạng cây gồm N trạm. Mỗi trạm i có một người điều hành:
+    + Trung thực (C_i = 1): Luôn báo cáo đúng số lượng hàng xóm đang bị "Giả mạo".
+    + Giả mạo (C_i = 0): Luôn báo cáo sai số lượng hàng xóm đang bị "Giả mạo".
+- Biết r_i là con số mà trạm i phản hồi.
+- Yêu cầu: Đếm số cấu hình trạng thái (C_1, C_2, ..., C_N) hợp lệ modulo 10^9 + 7.
+
+GIẢI THUẬT (Tree DP):
+1. Gọi f[u][i][state] là số cách chọn trạng thái cho cây con gốc u sao cho:
+    - state = 1: Trạm u là Trung thực.
+    - state = 0: Trạm u là Giả mạo.
+    - i: Số lượng con của u có trạng thái Giả mạo (C_v = 0).
+2. Khi DFS và gộp trạng thái từ con v vào cha u:
+    - Nếu u là Trung thực (state = 1): u đóng vai trò là hàng xóm "Trung thực" của v.
+      Do đó, v chỉ đếm số hàng xóm giả mạo dựa trên các con của v.
+      + v trung thực: f[v][j][1] hợp lệ nếu j == a[v].
+      + v giả mạo: f[v][j][0] hợp lệ nếu j != a[v] (u tính thêm i+1).
+    - Nếu u là Giả mạo (state = 0): u đóng vai trò là hàng xóm "Giả mạo" của v.
+      Do đó, số hàng xóm giả mạo của v là (số con của v bị giả mạo) + 1.
+      + v trung thực: f[v][j][1] hợp lệ nếu j + 1 == a[v].
+      + v giả mạo: f[v][j][0] hợp lệ nếu j + 1 != a[v] (u tính thêm i+1).
+3. Độ phức tạp: O(N^2) nhờ kỹ thuật gộp DP trên cây (tương tự bài toán Knapsack trên cây).
+4. Kết quả cuối cùng: Xét tại gốc (trạm 1), cộng các trường hợp f[1][j][state] thỏa mãn
+   quy tắc báo cáo (đúng/sai) dựa trên số lượng con bị giả mạo (vì gốc không có cha).
+================================================================================
+*/
+
+#include <bits/stdc++.h>
+using namespace std;
+#pragma GCC optimize("O3,unroll-loops,no-stack-protector")
+#pragma GCC target("sse4,avx2,fma")
+#define task ""
+#define ll long long
+#define ii pair<int,int>
+#define fi first
+#define se second
+#define pb push_back
+#define vi vector<int>
+#define vii vector<ii>
+
+const int N = 5e3+9;
+const int mod=1e9+7;
+
+int n, m;
+int a[N];
+vector<int> g[N];
+int f[N][N][2];
+
+void dfs(int u, int p) {
+    f[u][0][0]=1;
+    f[u][0][1]=1;
+    int size_u = 0; // Tối ưu: quản lý kích thước cây con để gộp DP
+
+    for (int v : g[u]) {
+        if (v == p) continue;
+        dfs(v, u);
+
+        // nxt lưu tạm kết quả sau khi gộp cây con v vào u
+        vector<vector<int>> nxt(n + 1, vector<int>(2, 0ll));
+
+        // Duyệt qua số lượng con giả mạo hiện tại của u và của v
+        for(int i = size_u; i >= 0; i--){
+            for(int j = 0; j <= n - size_u; j++){ // Giới hạn thực tế dựa trên số nút đã duyệt
+                if (f[v][j][0] == 0 && f[v][j][1] == 0) continue;
+
+                // Trường hợp u là TRUNG THỰC (state = 1)
+                ll tmp = f[u][i][1];
+                if(tmp > 0) {
+                    // v trung thực: số con giả mạo j của v phải khớp a[v]
+                    if(j == a[v]) nxt[i][1] = (nxt[i][1] + (tmp * f[v][j][1]) % mod) % mod;
+                    // v giả mạo: số con giả mạo j của v phải khác a[v]. Tăng số con giả mạo của u lên i+1
+                    if(j != a[v]) nxt[i+1][1] = (nxt[i+1][1] + (tmp * f[v][j][0]) % mod) % mod;
+                }
+
+                // Trường hợp u là GIẢ MẠO (state = 0)
+                tmp = f[u][i][0];
+                if(tmp > 0) {
+                    // v trung thực: v thấy cha u giả mạo nên j+1 phải khớp a[v]
+                    if(j+1 == a[v]) nxt[i][0] = (nxt[i][0] + (tmp * f[v][j][1]) % mod) % mod;
+                    // v giả mạo: v thấy cha u giả mạo nên j+1 phải khác a[v]. Tăng i+1 cho u
+                    if(j+1 != a[v]) nxt[i+1][0] = (nxt[i+1][0] + (tmp * f[v][j][0]) % mod) % mod;
+                }
+            }
+        }
+        size_u++; // Cập nhật số con đã xử lý
+        for(int i = 0; i <= n; ++i) {
+            f[u][i][0] = nxt[i][0];
+            f[u][i][1] = nxt[i][1];
+        }
+    }
+}
+
+signed main() {
+    ios_base::sync_with_stdio(0);
+    cin.tie(0);cout.tie(0);
+
+    if (!(cin >> n)) return 0;
+    for(int i=1;i<=n;i++) cin>>a[i];
+
+    for(int i=1;i<n;i++){
+        int u,v;
+        cin>>u>>v;
+        g[u].pb(v);
+        g[v].pb(u);
+    }
+
+    dfs(1,-1);
+
+    ll res=0;
+    // Xét trạm gốc (không có cha)
+    for(int j=0; j<=n; j++)
+    {
+        // Gốc giả mạo: số con giả mạo j phải khác báo cáo a[1]
+        if(a[1] != j) res = (res + f[1][j][0]) % mod;
+    }
+    // Gốc trung thực: số con giả mạo j phải đúng bằng báo cáo a[1]
+    res = (res + f[1][a[1]][1]) % mod;
+
+    cout << res;
+    return 0;
+}

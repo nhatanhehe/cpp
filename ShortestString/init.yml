@@ -1,0 +1,3 @@
+checker: custom
+checker_src: checker.cpp
+partial_scoring: true

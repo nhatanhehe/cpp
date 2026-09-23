@@ -1,0 +1,1 @@
+{"name":"Local: P15842","url":"e:\\cpp\\Lougu\\P15842.cpp","tests":[{"id":1786681483753,"input":"5\n1 2 1\n1 4 2\n2 3 3\n2 5 4\n10\n1 1 0\n1 2 0\n1 3 0\n1 4 0\n1 5 0\n1 1 1 5\n1 1 1 2\n2 1 100\n1 2 0\n1 2 4 1 3 4 5","output":"5\n4\n7\n7\n7\n4\n2\n102\n0"}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\Lougu\\P15842.cpp","group":"local","local":true}

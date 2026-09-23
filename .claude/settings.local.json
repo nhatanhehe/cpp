@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(g++ *)",
+      "Bash(python *)",
+      "Bash(mkdir *)",
+      "Bash(make clean *)",
+      "Read(//Users/Shared/cpp/**)",
+      "Bash(./gen.exe 3209876514 100000 1000000000 6)",
+      "Bash(python3 make_tests.py)",
+      "Bash(./solution.exe *)",
+      "Bash(zip *)"
+    ]
+  }
+}

@@ -1,0 +1,175 @@
+/*
+ * BÀI TOÁN: QCSYS - QUẢN LÝ CHẤT LƯỢNG HỆ THỐNG
+ * * [TÓM TẮT ĐỀ BÀI]
+ * - Cho bảng 2 hàng, N cột. Mỗi ô (r, i) có một giá trị cảm biến T(r, i).
+ * - Thao tác U: Cập nhật giá trị T(r, i) = x.
+ * - Thao tác P [L, R]: 
+ * + Được phép hoán vị các cột trong đoạn [L, R].
+ * + Tìm đường đi ngắn nhất từ (1, L) đến (2, R). Đường đi này luôn qua (R-L+1) + 1 trạm.
+ * + Tìm giá trị trung vị (phần tử thứ ceil((K+1)/2)) nhỏ nhất có thể đạt được.
+ * * [PHÂN TÍCH SOLUTION]
+ * 1. Nhận xét về đường đi:
+ * Trong đoạn [L, R] gồm K cột, đường đi ngắn nhất từ (1, L) đến (2, R) sẽ:
+ * - Đi qua ít nhất 1 ô của mỗi cột.
+ * - Có duy nhất 1 cột được đi qua cả 2 hàng (để chuyển từ hàng 1 xuống hàng 2).
+ * 2. Chiến thuật tối ưu:
+ * - Gọi a[i] = min(T(1, i), T(2, i)) và b[i] = max(T(1, i), T(2, i)).
+ * - Tập hợp K+1 giá trị trên đường đi sẽ gồm: K giá trị của mảng a từ cột L đến R, 
+ * cộng thêm 1 giá trị b[j] của một cột j nào đó thuộc [L, R].
+ * - Để tập hợp này nhỏ nhất, ta chọn j sao cho b[j] nhỏ nhất: X = min(b[L...R]).
+ * - Tập tối ưu: {a[L], a[L+1], ..., a[R], X}.
+ * 3. Cấu trúc dữ liệu:
+ * - Segment Tree: Tìm X = min(b[L...R]) trong O(log N).
+ * - Fenwick Tree + Dynamic Segment Tree: Tìm phần tử nhỏ thứ k trong đoạn [L, R] 
+ * của mảng a (Range K-th Smallest) trong O(log N * log MaxVal).
+ */
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+const int MAXN = 100005;
+const int MAXVAL = 300005;
+
+int N, Q;
+int T[3][MAXN];
+int a[MAXN], b[MAXN];
+
+// Segment Tree cho RMQ trên mảng b
+int tree_min[4 * MAXN];
+
+void build_st(int node, int start, int end) {
+    if (start == end) {
+        tree_min[node] = b[start];
+        return;
+    }
+    int mid = (start + end) / 2;
+    build_st(2 * node, start, mid);
+    build_st(2 * node + 1, mid + 1, end);
+    tree_min[node] = min(tree_min[2 * node], tree_min[2 * node + 1]);
+}
+
+void update_st(int node, int start, int end, int idx, int val) {
+    if (start == end) {
+        tree_min[node] = val;
+        return;
+    }
+    int mid = (start + end) / 2;
+    if (idx <= mid) update_st(2 * node, start, mid, idx, val);
+    else update_st(2 * node + 1, mid + 1, end, idx, val);
+    tree_min[node] = min(tree_min[2 * node], tree_min[2 * node + 1]);
+}
+
+int query_st(int node, int start, int end, int l, int r) {
+    if (r < start || end < l) return 1e9;
+    if (l <= start && end <= r) return tree_min[node];
+    int mid = (start + end) / 2;
+    return min(query_st(2 * node, start, mid, l, r), query_st(2 * node + 1, mid + 1, end, l, r));
+}
+
+// Cấu trúc BIT + Dynamic Segment Tree cho Range K-th Smallest trên mảng a
+struct Node {
+    int count;
+    int L, R;
+} nodes[MAXN * 400]; // Cấp phát bộ nhớ đủ lớn (~400MB)
+
+int root[MAXN], node_count = 0;
+
+void update_dyn(int &node, int start, int end, int val, int delta) {
+    if (!node) node = ++node_count;
+    nodes[node].count += delta;
+    if (start == end) return;
+    int mid = (start + end) / 2;
+    if (val <= mid) update_dyn(nodes[node].L, start, mid, val, delta);
+    else update_dyn(nodes[node].R, mid + 1, end, val, delta);
+}
+
+void update_bit(int idx, int val, int delta) {
+    for (; idx <= N; idx += idx & -idx)
+        update_dyn(root[idx], 1, MAXVAL, val, delta);
+}
+
+vector<int> L_nodes, R_nodes;
+
+int query_kth(int k, int start, int end) {
+    if (start == end) return start;
+    int count_left = 0;
+    for (int node : R_nodes) count_left += nodes[nodes[node].L].count;
+    for (int node : L_nodes) count_left -= nodes[nodes[node].L].count;
+
+    int mid = (start + end) / 2;
+    if (k <= count_left) {
+        for (int &node : L_nodes) node = nodes[node].L;
+        for (int &node : R_nodes) node = nodes[node].L;
+        return query_kth(k, start, mid);
+    } else {
+        for (int &node : L_nodes) node = nodes[node].R;
+        for (int &node : R_nodes) node = nodes[node].R;
+        return query_kth(k - count_left, mid + 1, end);
+    }
+}
+
+int get_kth(int l, int r, int k) {
+    if (k <= 0) return -1;
+    L_nodes.clear(); R_nodes.clear();
+    for (int i = l - 1; i > 0; i -= i & -i) L_nodes.push_back(root[i]);
+    for (int i = r; i > 0; i -= i & -i) R_nodes.push_back(root[i]);
+    return query_kth(k, 1, MAXVAL);
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    // if (freopen("QCSYS.INP", "r", stdin)) {
+    //     freopen("QCSYS.OUT", "w", stdout);
+    // }
+
+    cin >> N >> Q;
+    for (int i = 1; i <= N; ++i) cin >> T[1][i];
+    for (int i = 1; i <= N; ++i) cin >> T[2][i];
+
+    for (int i = 1; i <= N; ++i) {
+        a[i] = min(T[1][i], T[2][i]);
+        b[i] = max(T[1][i], T[2][i]);
+        update_bit(i, a[i], 1);
+    }
+
+    build_st(1, 1, N);
+
+    while (Q--) {
+        char type;
+        cin >> type;
+        if (type == 'U') {
+            int r, i, x;
+            cin >> r >> i >> x;
+            // Xóa giá trị cũ trong BIT
+            update_bit(i, a[i], -1);
+            // Cập nhật giá trị mới
+            T[r][i] = x;
+            a[i] = min(T[1][i], T[2][i]);
+            b[i] = max(T[1][i], T[2][i]);
+            update_bit(i, a[i], 1);
+            update_st(1, 1, N, i, b[i]);
+        } else {
+            int L, R;
+            cin >> L >> R;
+            int K = R - L + 1;
+            int m = (K + 2) / 2;
+            int X = query_st(1, 1, N, L, R);
+            
+            // Tìm m-th smallest của {a[L...R]} U {X}
+            int v2 = get_kth(L, R, m);
+            if (m == 1) {
+                cout << min(X, v2) << "\n";
+            } else {
+                int v1 = get_kth(L, R, m - 1);
+                // Đáp án là giá trị X kẹp giữa v1 và v2 của mảng a
+                cout << max(v1, min(X, v2)) << "\n";
+            }
+        }
+    }
+
+    return 0;
+}

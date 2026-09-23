@@ -1,0 +1,1 @@
+{"name":"Local: even","url":"e:\\cpp\\even.cpp","tests":[{"id":1779795988428,"input":"1 22","output":"6"},{"id":1779800806578,"input":"99 100","output":""},{"id":1779812129841,"input":"2 17","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"e:\\cpp\\even.cpp","group":"local","local":true}

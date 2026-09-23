@@ -1,0 +1,132 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <stack>
+#include <algorithm>
+
+using namespace std;
+
+/**
+ * TÓM TẮT ĐỀ BÀI:
+ * - Đếm số chuỗi lệnh (U, D, L, R) sao cho MỌI HOÁN VỊ của chuỗi đó đều có thể thực hiện 
+ * an toàn từ ít nhất một ô xuất phát '0' (không ra ngoài biên, không đâm vào '1').
+ * * TÓM TẮT GIẢI PHÁP (SOLUTION):
+ * 1. Điều kiện then chốt: Một chuỗi lệnh có tổng bước di chuyển dọc là H, ngang là W 
+ * (với H = nU + nD và W = nL + nR) sẽ an toàn dưới mọi hoán vị nếu và chỉ nếu 
+ * tồn tại một hình chữ nhật toàn số '0' kích thước (H+1) x (W+1) trên lưới.
+ * 2. Thuật toán:
+ * - Bước 1: Dùng Monotonic Stack để tìm max_w[h] (chiều rộng tối đa của hình chữ nhật 
+ * toàn '0' có chiều cao h). Độ phức tạp O(N*M).
+ * - Bước 2: Với mỗi cặp (H, W) thỏa mãn tồn tại hình chữ nhật (H+1) x (W+1), số lượng
+ * chuỗi lệnh tương ứng là: C(H + W, H) * 2^H * 2^W.
+ * - Bước 3: Tổng hợp kết quả theo modulo và trừ 1 cho trường hợp chuỗi rỗng.
+ */
+
+const int MOD = 998244353;
+long long fact[4005], invFact[4005], pow2[4005];
+
+// Hàm tính lũy thừa nhanh để tính nghịch đảo modulo
+long long power(long long base, long long exp) {
+    long long res = 1;
+    base %= MOD;
+    while (exp > 0) {
+        if (exp % 2 == 1) res = (res * base) % MOD;
+        base = (base * base) % MOD;
+        exp /= 2;
+    }
+    return res;
+}
+
+// Tiền xử lý giai thừa và lũy thừa của 2
+void precompute() {
+    fact[0] = 1;
+    pow2[0] = 1;
+    for (int i = 1; i <= 4000; i++) {
+        fact[i] = (fact[i - 1] * i) % MOD;
+        pow2[i] = (pow2[i - 1] * 2) % MOD;
+    }
+    invFact[4000] = power(fact[4000], MOD - 2);
+    for (int i = 3999; i >= 0; i--) {
+        invFact[i] = (invFact[i + 1] * (i + 1)) % MOD;
+    }
+}
+
+// Hàm tính tổ hợp chập r của n
+long long nCr(int n, int r) {
+    if (r < 0 || r > n) return 0;
+    return (((fact[n] * invFact[r]) % MOD) * invFact[n - r]) % MOD;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    precompute();
+
+    int N, M;
+    if (!(cin >> N >> M)) return 0;
+
+    vector<string> grid(N);
+    for (int i = 0; i < N; i++) cin >> grid[i];
+
+    // Tính chiều cao các cột '0' liên tiếp
+    vector<vector<int>> height(N, vector<int>(M));
+    for (int j = 0; j < M; j++) {
+        for (int i = 0; i < N; i++) {
+            if (grid[i][j] == '0') {
+                height[i][j] = (i == 0 ? 1 : height[i - 1][j] + 1);
+            } else {
+                height[i][j] = 0;
+            }
+        }
+    }
+
+    // max_w[h] lưu chiều rộng lớn nhất của hình chữ nhật toàn '0' có chiều cao h
+    vector<int> max_w(N + 1, 0);
+    for (int i = 0; i < N; i++) {
+        vector<int> L(M), R(M);
+        stack<int> s;
+        // Monotonic Stack tìm biên trái
+        for (int j = 0; j < M; j++) {
+            while (!s.empty() && height[i][s.top()] >= height[i][j]) s.pop();
+            L[j] = s.empty() ? 0 : s.top() + 1;
+            s.push(j);
+        }
+        while (!s.empty()) s.pop();
+        // Monotonic Stack tìm biên phải
+        for (int j = M - 1; j >= 0; j--) {
+            while (!s.empty() && height[i][s.top()] >= height[i][j]) s.pop();
+            R[j] = s.empty() ? M - 1 : s.top() - 1;
+            s.push(j);
+        }
+        for (int j = 0; j < M; j++) {
+            if (height[i][j] > 0) {
+                max_w[height[i][j]] = max(max_w[height[i][j]], R[j] - L[j] + 1);
+            }
+        }
+    }
+
+    // Nếu tồn tại h x w thì cũng tồn tại (h-1) x w
+    for (int h = N - 1; h >= 1; h--) {
+        max_w[h] = max(max_w[h], max_w[h + 1]);
+    }
+
+    long long ans = 0;
+    // H: tổng số lệnh dọc (nU + nD), W: tổng số lệnh ngang (nL + nR)
+    // Tương ứng với hình chữ nhật kích thước (H+1) x (W+1)
+    for (int H = 0; H < N; H++) {
+        int limit_W = max_w[H + 1]; 
+        for (int W = 0; W < limit_W; W++) {
+            // Số cách chọn vị trí cho lệnh dọc/ngang: nCr(H+W, H)
+            // Mỗi lệnh dọc có 2 lựa chọn (U/D), mỗi lệnh ngang có 2 lựa chọn (L/R)
+            long long ways = (nCr(H + W, H) * pow2[H + W]) % MOD;
+            ans = (ans + ways) % MOD;
+        }
+    }
+
+    // Trừ 1 để loại bỏ chuỗi rỗng (trường hợp H=0, W=0)
+    ans = (ans - 1 + MOD) % MOD;
+    cout << ans << endl;
+
+    return 0;
+}

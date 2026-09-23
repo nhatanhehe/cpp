@@ -1,0 +1,28 @@
+struct BinaryTrie {
+    struct Node {
+        int cnt;
+        Node *child[2];
+        Node() {
+            cnt = 0;
+            child[0] = child[1] = nullptr;
+        }
+    };
+
+    Node *root;
+
+    BinaryTrie() {
+        root = new Node();
+    }
+
+    void insert(int x, int bit) {
+        Node *p = root;
+        for(int b=bit; b>=0; b--) {
+            int c = (x>>b)&1;
+            if(p->child[c]==nullptr) p->child[c] = new Node();
+            p = p->child[c];
+            p->cnt++;
+        }
+    }
+
+};
+

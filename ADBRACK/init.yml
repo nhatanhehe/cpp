@@ -1,0 +1,63 @@
+subtasks:
+  - name: "Subtask 1"
+    points: 10
+    tests:
+      - ADBRACK.1
+      - ADBRACK.2
+      - ADBRACK.3
+      - ADBRACK.4
+      - ADBRACK.5
+  - name: "Subtask 2"
+    points: 20
+    tests:
+      - ADBRACK.6
+      - ADBRACK.7
+      - ADBRACK.8
+      - ADBRACK.9
+      - ADBRACK.10
+      - ADBRACK.11
+      - ADBRACK.12
+      - ADBRACK.13
+      - ADBRACK.14
+      - ADBRACK.15
+  - name: "Subtask 3"
+    points: 30
+    tests:
+      - ADBRACK.16
+      - ADBRACK.17
+      - ADBRACK.18
+      - ADBRACK.19
+      - ADBRACK.20
+      - ADBRACK.21
+      - ADBRACK.22
+      - ADBRACK.23
+      - ADBRACK.24
+      - ADBRACK.25
+      - ADBRACK.26
+      - ADBRACK.27
+      - ADBRACK.28
+      - ADBRACK.29
+      - ADBRACK.30
+  - name: "Subtask 4"
+    points: 40
+    tests:
+      - ADBRACK.31
+      - ADBRACK.32
+      - ADBRACK.33
+      - ADBRACK.34
+      - ADBRACK.35
+      - ADBRACK.36
+      - ADBRACK.37
+      - ADBRACK.38
+      - ADBRACK.39
+      - ADBRACK.40
+      - ADBRACK.41
+      - ADBRACK.42
+      - ADBRACK.43
+      - ADBRACK.44
+      - ADBRACK.45
+      - ADBRACK.46
+      - ADBRACK.47
+      - ADBRACK.48
+      - ADBRACK.49
+      - ADBRACK.50

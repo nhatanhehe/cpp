@@ -1,0 +1,74 @@
+/*
+ * PROBLEM: APEX - Mạng Ổn Định Trung Tâm
+ * TÓM TẮT: Tính tổng chi phí (weighted sum) của mọi hoán vị hợp lệ.
+ * Luật: a[i] đổi chỗ a[i-1] được nếu a[i] > max(a[1]...a[i-1]).
+ * THUẬT TOÁN: Duyệt O(N).
+ * - Nếu a[i] <= Max: a[i] chỉ đứng cuối.
+ * Cost_new = Cost_old + Count * Sum_val + Count * a[i].
+ * - Nếu a[i] > Max: a[i] chèn được mọi chỗ (1..i).
+ * Cost_new = Cost_old * (i+1) + a[i] * Count * Sum(1..i).
+ * Count_new = Count_old * i.
+ */
+
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+const int MOD = 1e9 + 7;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    if (fopen("APEX.INP", "r")) {
+        freopen("APEX.INP", "r", stdin);
+        freopen("APEX.OUT", "w", stdout);
+    }
+
+    int n;
+    cin >> n;
+
+    ll current_max = 0;       // Giá trị lớn nhất hiện tại
+    ll total_cost = 0;        // Tổng chi phí (T)
+    ll count_perms = 1;       // Số lượng dãy hợp lệ (C)
+    ll sum_vals = 0;          // Tổng giá trị các phần tử đã xét (S)
+
+    for (int i = 1; i <= n; ++i) {
+        ll a;
+        cin >> a;
+
+        if (a > current_max) {
+            // Trường hợp 2: Kỷ lục mới -> Chèn được mọi chỗ
+            // Công thức: T_new = T_old * (i + 1) + a * C * (i*(i+1)/2)
+
+            // Tính đóng góp của T cũ: T * (i+1)
+            ll term1 = (total_cost * (i + 1)) % MOD;
+
+            // Tính đóng góp của a tại mọi vị trí: a * C * (1+..+i)
+            ll sum_indices = (1LL * i * (i + 1) / 2) % MOD;
+            ll term2 = (a * count_perms) % MOD;
+            term2 = (term2 * sum_indices) % MOD;
+
+            total_cost = (term1 + term2) % MOD;
+
+            // Số lượng hoán vị tăng lên i lần
+            count_perms = (count_perms * i) % MOD;
+            current_max = a;
+        } else {
+            // Trường hợp 1: Không phải kỷ lục -> Chỉ đứng cuối
+            // Công thức: T_new = T_old + C * S + C * a
+
+            ll term_s = (count_perms * sum_vals) % MOD;
+            ll term_a = (count_perms * a) % MOD;
+
+            total_cost = (total_cost + term_s) % MOD;
+            total_cost = (total_cost + term_a) % MOD;
+            // Count không đổi
+        }
+
+        sum_vals = (sum_vals + a) % MOD;
+    }
+
+    cout << total_cost;
+    return 0;
+}
